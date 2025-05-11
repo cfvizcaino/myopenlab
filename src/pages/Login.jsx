@@ -1,39 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginUser, resetPassword } from '../utils/authservice';
 import { FirebaseError } from 'firebase/app';
+import { useTheme } from '../context/ThemeContext'; // Importa el ThemeContext
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [resetSent, setResetSent] = useState(false);
-    const [darkMode, setDarkMode] = useState(false);
     const navigate = useNavigate();
 
-    // Detectar preferencia de modo oscuro del sistema
-    useEffect(() => {
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            setDarkMode(true);
-        }
-
-        // Escuchar cambios en la preferencia del sistema
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        const handleChange = (e) => setDarkMode(e.matches);
-        mediaQuery.addEventListener('change', handleChange);
-        
-        return () => mediaQuery.removeEventListener('change', handleChange);
-    }, []);
-
-    // Manejar cambio manual de tema
-    const toggleDarkMode = () => {
-        setDarkMode(!darkMode);
-    };
+    // Usa el estado global de ThemeContext
+    const { darkMode, toggleDarkMode } = useTheme();
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
-        
+
         try {
             const user = await loginUser(email, password);
             console.log('Usuario autenticado:', user);
@@ -62,7 +46,7 @@ const Login = () => {
     const handleResetPassword = async (e) => {
         e.preventDefault();
         setError('');
-        
+
         try {
             await resetPassword(email);
             setResetSent(true);
@@ -104,7 +88,7 @@ const Login = () => {
                     )}
                 </button>
             </div>
-            
+
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
                 <h2 className={`mt-6 text-center text-3xl font-extrabold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                     Bienvenido
@@ -200,6 +184,16 @@ const Login = () => {
                             ¿No tienes una cuenta?{' '}
                             <Link to="/register" className={`font-medium hover:underline ${darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-500'}`}>
                                 Regístrate aquí
+                            </Link>
+                        </p>
+                    </div>
+
+                    {/* Botón para ir al Catalog */}
+                    <div className="mt-6">
+                        <p className={`text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            Revisar tableros de la comunidad:{' '}
+                            <Link to="/catalog" className={`font-medium hover:underline ${darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-500'}`}>
+                                clic aquí
                             </Link>
                         </p>
                     </div>
