@@ -6,11 +6,11 @@ import { useAuth } from "../context/AuthContext"
 import { useTheme } from "../context/ThemeContext"
 import { signOut } from "firebase/auth"
 import { auth } from "../utils/firebase"
-import { collection, query, where, getDocs, limit } from "firebase/firestore"
+import { collection, query, where, getDocs, limit, doc, getDoc } from "firebase/firestore"
 import { db } from "../utils/firebase"
 
 const Dashboard = () => {
-  const { user } = useAuth()
+  const { user, userData } = useAuth()
   const { darkMode, toggleDarkMode } = useTheme()
   const navigate = useNavigate()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -51,9 +51,6 @@ const Dashboard = () => {
       console.error("Error al cerrar sesión:", error)
     }
   }
-
-  // Get user's first name for greeting
-  const firstName = user?.displayName?.split(" ")[0] || user?.email?.split("@")[0] || ""
 
   // Theme classes
   const theme = {
@@ -374,7 +371,9 @@ const Dashboard = () => {
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           {/* Page header */}
           <div className="px-4 py-6 sm:px-0">
-            <h1 className={`text-3xl font-bold ${theme.highlight}`}>Hola, {firstName}</h1>
+            <h1 className={`text-3xl font-bold ${theme.highlight}`}>
+              Hola, {userData?.firstName || ''} {userData?.lastName || ''}
+            </h1>
             <p className={`mt-1 text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
               Bienvenido a tu dashboard personal. Aquí puedes gestionar tus proyectos y recursos.
             </p>

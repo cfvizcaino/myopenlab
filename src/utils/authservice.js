@@ -1,6 +1,6 @@
 import { auth } from '../utils/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
-import { collection, addDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 
 /**
@@ -18,16 +18,15 @@ export const registerUser = async (email, password, firstName, lastName) => {
         const user = userCredential.user;
         console.log('Usuario creado:', user);
 
-        // Guardar datos del usuario en Firestore usando addDoc
-        const usersCollectionRef = collection(db, 'users');
-        const docRef = await addDoc(usersCollectionRef, {
-            uid: user.uid, // Guardamos el UID manualmente
+        // Guardar datos del usuario en Firestore usando setDoc con el UID como ID del documento
+        const userDocRef = doc(db, 'users', user.uid);
+        await setDoc(userDocRef, {
             firstName,
             lastName,
             email,
             createdAt: new Date().toISOString(),
         });
-        console.log('Documento creado en Firestore con ID:', docRef.id);
+        console.log('Documento creado en Firestore con ID:', user.uid);
 
         return user;
     } catch (error) {
