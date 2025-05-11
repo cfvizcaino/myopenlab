@@ -52,10 +52,10 @@ Esta primera fase sienta las bases funcionales, visuales y de seguridad del sist
 
 ### 3. Instala las dependencias necesarias:
    ```bash
-   npm run dev
+   npm install
    ```
 
 ### 4. Ejecuta el servidor de desarrollo
    ```bash
-   npm install
+   npm run dev
    ```
