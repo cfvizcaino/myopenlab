@@ -9,7 +9,7 @@
 
 </div>
 
-
+<br>
 
 ## 🧾 Descripción del Proyecto
 
@@ -22,7 +22,7 @@ Este portal se divide en dos partes:
 
 Esta primera fase sienta las bases funcionales, visuales y de seguridad del sistema. Incluye validaciones, protección de rutas y un diseño responsivo con soporte para **modo oscuro**.
 
-
+<br>
 
 ## 🛠️ Tecnologías Utilizadas
 <div align="center">
@@ -36,7 +36,7 @@ Esta primera fase sienta las bases funcionales, visuales y de seguridad del sist
 | **React Router DOM**     | Navegación entre páginas y protección de rutas privadas        |
 </div>
 
-
+<br>
 
 ## ⚙️ Instrucciones de Instalación y Despliegue Local
 
