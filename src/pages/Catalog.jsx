@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { getFirestore, collection, getDocs, doc, getDoc } from "firebase/firestore";
 import getTheme from "../utils/theme"; // Importar el tema general
 import Header from "../components/Header"; // Importar el encabezado
 
@@ -11,15 +11,46 @@ const Catalog = () => {
 
   useEffect(() => {
     const fetchProjects = async () => {
-      const db = getFirestore();
-      const projectsCollection = collection(db, "projects");
-      const projectsSnapshot = await getDocs(projectsCollection);
-      const projectsData = projectsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setProjects(projectsData);
-      setLoading(false);
+      try {
+        const db = getFirestore();
+        const projectsCollection = collection(db, "projects");
+        const projectsSnapshot = await getDocs(projectsCollection);
+
+        const projectsData = await Promise.all(
+          projectsSnapshot.docs.map(async (projectDoc) => {
+            const project = { id: projectDoc.id, ...projectDoc.data() };
+
+            // Obtener el nombre del autor desde la colección "users"
+            if (project.userId) {
+              try {
+                const userDocRef = doc(db, "users", project.userId); // Asegúrate de usar `doc` correctamente
+                const userSnapshot = await getDoc(userDocRef);
+                if (userSnapshot.exists()) {
+                  const userData = userSnapshot.data();
+                  project.authorName = `${userData.firstName || "Desconocido"} ${userData.lastName || ""}`.trim();
+                } else {
+                  project.authorName = "Autor desconocido";
+                }
+              } catch (error) {
+                console.error("Error al obtener el autor:", error);
+                project.authorName = "Autor desconocido";
+              }
+            } else {
+              project.authorName = "Autor desconocido";
+            }
+
+            return project;
+          })
+        );
+
+        setProjects(projectsData);
+        setLoading(false);
+
+        console.log("Proyectos obtenidos:", projectsData);
+      } catch (error) {
+        console.error("Error al obtener los proyectos:", error);
+        setLoading(false); // Asegúrate de que el estado de carga se detenga incluso si hay un error
+      }
     };
 
     fetchProjects();
@@ -34,7 +65,6 @@ const Catalog = () => {
   return (
     <div className={`min-h-screen ${theme.bg} transition-all duration-500`}>
       <Header darkMode={darkMode} setDarkMode={setDarkMode} theme={theme} />
-      {/* Separar el catálogo del encabezado */}
       <div className="mt-8 px-4 sm:px-8 lg:px-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
           {projects.map((project) => (
@@ -43,9 +73,7 @@ const Catalog = () => {
                 className={`card border rounded-lg shadow-lg hover:shadow-xl transition-transform transform hover:scale-105 ${theme.card}`}
               >
                 <div className="p-6">
-                  <h2
-                    className={`text-2xl font-semibold mb-4 ${theme.highlight}`}
-                  >
+                  <h2 className={`text-2xl font-semibold mb-4 ${theme.highlight}`}>
                     {project.title}
                   </h2>
                   <p

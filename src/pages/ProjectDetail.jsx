@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getFirestore, doc, getDoc, collection } from "firebase/firestore";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 import getTheme from "../utils/theme"; // Importar el tema general
 import Header from "../components/Header"; // Importar el encabezado
 
@@ -12,31 +12,43 @@ const ProjectDetail = () => {
 
   useEffect(() => {
     const fetchProject = async () => {
-      const db = getFirestore();
+      try {
+        const db = getFirestore();
 
-      // Obtener el proyecto por ID
-      const projectDoc = doc(db, "projects", id);
-      const projectSnapshot = await getDoc(projectDoc);
+        // Obtener el proyecto por ID
+        const projectDocRef = doc(db, "projects", id);
+        const projectSnapshot = await getDoc(projectDocRef);
 
-      if (projectSnapshot.exists()) {
-        const projectData = projectSnapshot.data();
+        if (projectSnapshot.exists()) {
+          const projectData = projectSnapshot.data();
 
-        // Obtener el nombre del autor
-        const userDoc = doc(collection(db, "users"), projectData.userId);
-        const userSnapshot = await getDoc(userDoc);
-        const authorName = userSnapshot.exists()
-          ? userSnapshot.data().name
-          : "Autor desconocido";
+          // Obtener el nombre del autor desde la colección "users"
+          let authorName = "Autor desconocido";
+          if (projectData.userId) {
+            try {
+              const userDocRef = doc(db, "users", projectData.userId);
+              const userSnapshot = await getDoc(userDocRef);
+              if (userSnapshot.exists()) {
+                const userData = userSnapshot.data();
+                authorName = `${userData.firstName || "Desconocido"} ${userData.lastName || ""}`.trim();
+              }
+            } catch (error) {
+              console.error("Error al obtener el autor:", error);
+            }
+          }
 
-        setProject({
-          ...projectData,
-          authorName,
-        });
-      } else {
-        console.error("El proyecto no existe.");
+          setProject({
+            ...projectData,
+            authorName,
+          });
+        } else {
+          console.error("El proyecto no existe.");
+        }
+      } catch (error) {
+        console.error("Error al obtener el proyecto:", error);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     fetchProject();

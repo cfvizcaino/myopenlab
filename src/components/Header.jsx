@@ -1,9 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { getAuth, signOut } from "firebase/auth";
 
-const Header = ({ darkMode, setDarkMode, user, theme }) => {
+const Header = ({ darkMode, setDarkMode, theme }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [user, setUser] = useState(null);
   const location = useLocation();
+  const auth = getAuth();
+
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+    setUser(currentUser);
+  }, [auth]);
+
+  const handleLogout = () => {
+    signOut(auth)
+      .then(() => {
+        console.log("Sesión cerrada");
+        window.location.href = "/login";
+      })
+      .catch((error) => {
+        console.error("Error al cerrar sesión:", error);
+      });
+  };
 
   const renderNavLinks = (isMobile = false) => {
     const links = [
@@ -26,22 +45,27 @@ const Header = ({ darkMode, setDarkMode, user, theme }) => {
     ));
   };
 
-  const renderProfileMenu = (isMobile = false) => (
-    <div className={`${isMobile ? "mt-3 px-2 space-y-1" : ""}`}>
+  const renderProfileMenu = () => (
+    <div
+      className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 ${
+        darkMode ? "bg-gray-800 ring-1 ring-black ring-opacity-5" : "bg-white ring-1 ring-black ring-opacity-5"
+      }`}
+    >
       <Link
         to="#"
-        className={`${isMobile ? "block" : ""} px-3 py-2 rounded-md text-sm font-medium ${theme.inactiveNav}`}
+        className={`block px-4 py-2 text-sm ${darkMode ? "text-gray-300 hover:bg-gray-700 hover:text-white" : "text-gray-700 hover:bg-gray-100"}`}
       >
         Tu Perfil
       </Link>
       <Link
         to="#"
-        className={`${isMobile ? "block" : ""} px-3 py-2 rounded-md text-sm font-medium ${theme.inactiveNav}`}
+        className={`block px-4 py-2 text-sm ${darkMode ? "text-gray-300 hover:bg-gray-700 hover:text-white" : "text-gray-700 hover:bg-gray-100"}`}
       >
         Configuración
       </Link>
       <button
-        className={`${isMobile ? "block w-full text-left" : ""} px-3 py-2 rounded-md text-sm font-medium ${theme.inactiveNav}`}
+        onClick={handleLogout}
+        className={`block w-full text-left px-4 py-2 text-sm ${darkMode ? "text-gray-300 hover:bg-gray-700 hover:text-white" : "text-gray-700 hover:bg-gray-100"}`}
       >
         Cerrar Sesión
       </button>
@@ -60,7 +84,7 @@ const Header = ({ darkMode, setDarkMode, user, theme }) => {
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={2}
-        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 9.003 0 008.354-5.646z"
+        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 9.003 0 0012 21a9.003 9.003 9.003 0 008.354-5.646z"
       />
     </svg>
   );
@@ -111,19 +135,26 @@ const Header = ({ darkMode, setDarkMode, user, theme }) => {
 
             {/* User profile */}
             <div className="relative">
-              <div
-                className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                  darkMode ? "bg-indigo-600" : "bg-indigo-100"
-                }`}
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="flex items-center"
               >
-                <span
-                  className={`font-medium text-sm ${
-                    darkMode ? "text-white" : "text-indigo-700"
+                <div
+                  className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                    darkMode ? "bg-indigo-600" : "bg-indigo-100"
                   }`}
                 >
-                  {user?.email?.charAt(0).toUpperCase() || "U"}
-                </span>
-              </div>
+                  <span
+                    className={`font-medium text-sm ${
+                      darkMode ? "text-white" : "text-indigo-700"
+                    }`}
+                  >
+                    {user?.email?.charAt(0).toUpperCase() || "U"}
+                  </span>
+                </div>
+              </button>
+
+              {isMenuOpen && renderProfileMenu()}
             </div>
           </div>
 
@@ -212,7 +243,7 @@ const Header = ({ darkMode, setDarkMode, user, theme }) => {
                 <div className={theme.muted}>{user?.email}</div>
               </div>
             </div>
-            {renderProfileMenu(true)}
+            {renderProfileMenu()}
           </div>
         </div>
       )}
