@@ -10,6 +10,7 @@
 </div>
 
 
+
 ## 🧾 Descripción del Proyecto
 
 **Mi OpenLab** es una aplicación web desarrollada con React JS, pensada como un portal donde los usuarios pueden **registrarse, iniciar sesión y gestionar sus proyectos personales** de manera segura y ordenada.
@@ -22,7 +23,9 @@ Este portal se divide en dos partes:
 Esta primera fase sienta las bases funcionales, visuales y de seguridad del sistema. Incluye validaciones, protección de rutas y un diseño responsivo con soporte para **modo oscuro**.
 
 
+
 ## 🛠️ Tecnologías Utilizadas
+<div align="center">
 
 | Herramienta              | Descripción                                                   |
 |--------------------------|---------------------------------------------------------------|
@@ -31,6 +34,8 @@ Esta primera fase sienta las bases funcionales, visuales y de seguridad del sist
 | **Firebase Firestore**   | Base de datos en tiempo real para almacenar los proyectos     |
 | **Tailwind CSS**         | Framework CSS para diseño visual limpio y moderno             |
 | **React Router DOM**     | Navegación entre páginas y protección de rutas privadas        |
+</div>
+
 
 
 ## ⚙️ Instrucciones de Instalación y Despliegue Local
