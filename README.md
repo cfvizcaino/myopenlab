@@ -1,12 +1,59 @@
-# React + Vite
+# Mi OpenLab – Portal Funcional Base 🚀
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+<div align="center">
 
-Currently, two official plugins are available:
+[![React](https://img.shields.io/badge/React-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)](https://reactjs.org/)
+[![Firebase](https://img.shields.io/badge/Firebase-ffca28?style=for-the-badge&logo=firebase&logoColor=white)](https://firebase.google.com/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+</div>
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🧾 Descripción del Proyecto
+
+**Mi OpenLab** es una aplicación web desarrollada con React JS, pensada como un portal donde los usuarios pueden **registrarse, iniciar sesión y gestionar sus proyectos personales** de manera segura y ordenada.
+
+Este portal se divide en dos partes:
+
+- **Privada**: accesible solo para usuarios autenticados, donde pueden crear, ver, editar y eliminar sus propios proyectos.
+- **Pública**: donde cualquier visitante puede explorar los proyectos publicados por otros usuarios.
+
+Esta primera fase sienta las bases funcionales, visuales y de seguridad del sistema. Incluye validaciones, protección de rutas y un diseño responsivo con soporte para **modo oscuro**.
+
+---
+
+## 🛠️ Tecnologías Utilizadas
+
+| Herramienta              | Descripción                                                   |
+|--------------------------|---------------------------------------------------------------|
+| **React JS**             | Librería principal para construir la interfaz de usuario      |
+| **Firebase Authentication** | Autenticación de usuarios mediante correo y contraseña      |
+| **Firebase Firestore**   | Base de datos en tiempo real para almacenar los proyectos     |
+| **Tailwind CSS**         | Framework CSS para diseño visual limpio y moderno             |
+| **React Router DOM**     | Navegación entre páginas y protección de rutas privadas        |
+
+---
+
+## ⚙️ Instrucciones de Instalación y Despliegue Local
+
+### 1. Clona el repositorio:
+   ```bash
+   git clone https://github.com/cfvizcaino/myopenlab.git
+   ```
+
+### 2. Navega hasta el directorio del proyecto:
+   ```bash
+   cd myopenlab
+   ```
+
+### 3. Instala las dependencias necesarias:
+   ```bash
+   npm install
+   ```
+
+### 4. Ejecuta el servidor de desarrollo
+   ```bash
+   npm install
+   ```
