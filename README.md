@@ -9,7 +9,6 @@
 
 </div>
 
----
 
 ## 🧾 Descripción del Proyecto
 
@@ -22,7 +21,6 @@ Este portal se divide en dos partes:
 
 Esta primera fase sienta las bases funcionales, visuales y de seguridad del sistema. Incluye validaciones, protección de rutas y un diseño responsivo con soporte para **modo oscuro**.
 
----
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -34,7 +32,6 @@ Esta primera fase sienta las bases funcionales, visuales y de seguridad del sist
 | **Tailwind CSS**         | Framework CSS para diseño visual limpio y moderno             |
 | **React Router DOM**     | Navegación entre páginas y protección de rutas privadas        |
 
----
 
 ## ⚙️ Instrucciones de Instalación y Despliegue Local
 
