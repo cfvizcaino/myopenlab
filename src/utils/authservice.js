@@ -7,10 +7,38 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswor
  * @param {string} password - Contraseña del usuario.
  * @returns {Promise} - Promesa que resuelve con los datos del usuario registrado.
  */
+<<<<<<< Updated upstream
 export const registerUser = async (email, password) => {
+=======
+
+// Update your authservice.js registerUser function
+export const registerUser = async (email, password, firstName, lastName) => {
+>>>>>>> Stashed changes
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+<<<<<<< Updated upstream
         return userCredential.user;
+=======
+        const user = userCredential.user;
+        console.log('Usuario creado:', user);
+
+        // Expanded user document structure
+        const userDocRef = doc(db, 'users', user.uid);
+        await setDoc(userDocRef, {
+            firstName,
+            lastName,
+            email,
+            bio: "",
+            location: "",
+            website: "",
+            profilePicture: "",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+        console.log('Documento creado en Firestore con ID:', user.uid);
+
+        return user;
+>>>>>>> Stashed changes
     } catch (error) {
         console.error('Error al registrar usuario:', error);
         throw error;

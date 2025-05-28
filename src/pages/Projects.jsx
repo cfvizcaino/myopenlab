@@ -1,15 +1,24 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useNavigate, Link } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { useTheme } from "../context/ThemeContext"
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore"
 import { db } from "../utils/firebase"
+<<<<<<< Updated upstream
 import { signOut } from "firebase/auth"
 import { auth } from "../utils/firebase"
 import ProjectForm from "../components/ProjectForm"
 import ProjectList from "../components/ProjectList"
+=======
+import { ref, deleteObject } from "firebase/storage"
+import { storage } from "../utils/firebase"
+import Navbar from "../components/Navbar"
+import ProjectForm from "../components/ProjectForm"
+import ProjectCard from "../components/ProjectCard"
+import DeleteConfirmationModal from "../components/DeleteConfirmationModal"
+>>>>>>> Stashed changes
 
 const Projects = () => {
   const { user } = useAuth()
@@ -20,7 +29,13 @@ const Projects = () => {
   const [error, setError] = useState("")
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [currentProject, setCurrentProject] = useState(null)
+<<<<<<< Updated upstream
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+=======
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [projectToDelete, setProjectToDelete] = useState(null)
+  const [filter, setFilter] = useState("all") // all, public, private
+>>>>>>> Stashed changes
 
   // Theme classes
   const theme = {
@@ -30,6 +45,7 @@ const Projects = () => {
     highlight: darkMode ? "text-white" : "text-gray-900",
     muted: darkMode ? "text-gray-400" : "text-gray-500",
     accent: darkMode ? "text-indigo-400" : "text-indigo-600",
+<<<<<<< Updated upstream
     activeNav: darkMode ? "bg-gray-900 text-white" : "bg-indigo-50 text-indigo-700",
     inactiveNav: darkMode
       ? "text-gray-300 hover:bg-gray-700 hover:text-white"
@@ -43,6 +59,9 @@ const Projects = () => {
     } catch (error) {
       console.error("Error al cerrar sesión:", error)
     }
+=======
+    select: darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900",
+>>>>>>> Stashed changes
   }
 
   // Fetch user's projects
@@ -60,6 +79,13 @@ const Projects = () => {
           id: doc.id,
           ...doc.data(),
         })
+      })
+
+      // Sort by creation date (newest first)
+      projectsList.sort((a, b) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt)
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt)
+        return dateB - dateA
       })
 
       setProjects(projectsList)
@@ -83,6 +109,7 @@ const Projects = () => {
         ...projectData,
         userId: user.uid,
         createdAt: new Date(),
+        updatedAt: new Date(),
       }
 
       await addDoc(collection(db, "projects"), newProject)
@@ -99,8 +126,7 @@ const Projects = () => {
     try {
       const projectRef = doc(db, "projects", currentProject.id)
       await updateDoc(projectRef, {
-        title: projectData.title,
-        description: projectData.description,
+        ...projectData,
         updatedAt: new Date(),
       })
 
@@ -115,16 +141,35 @@ const Projects = () => {
 
   // Delete project
   const handleDeleteProject = async (projectId) => {
-    if (!window.confirm("¿Estás seguro de que deseas eliminar este proyecto?")) {
-      return
+    const projectToDelete = projects.find((project) => project.id === projectId)
+    if (projectToDelete) {
+      setProjectToDelete(projectToDelete)
+      setIsDeleteModalOpen(true)
     }
+  }
 
+  // Confirm delete project
+  const confirmDeleteProject = async () => {
     try {
-      await deleteDoc(doc(db, "projects", projectId))
+      // Delete featured image if exists
+      if (projectToDelete.featuredImage) {
+        try {
+          const imageRef = ref(storage, projectToDelete.featuredImage)
+          await deleteObject(imageRef)
+        } catch (error) {
+          console.log("Could not delete project image:", error)
+        }
+      }
+
+      // Delete project document
+      await deleteDoc(doc(db, "projects", projectToDelete.id))
+      setIsDeleteModalOpen(false)
+      setProjectToDelete(null)
       fetchProjects()
     } catch (err) {
       console.error("Error deleting project:", err)
       setError("Error al eliminar el proyecto. Por favor, intenta nuevamente.")
+      setIsDeleteModalOpen(false)
     }
   }
 
@@ -134,6 +179,7 @@ const Projects = () => {
     setIsFormOpen(true)
   }
 
+<<<<<<< Updated upstream
   // Get user's first name for greeting
   const firstName = user?.displayName?.split(" ")[0] || user?.email?.split("@")[0] || ""
 
@@ -336,18 +382,58 @@ const Projects = () => {
           </div>
         )}
       </nav>
+=======
+  // Filter projects based on visibility
+  const filteredProjects = projects.filter((project) => {
+    if (filter === "all") return true
+    return project.visibility === filter
+  })
+
+  // Get stats
+  const stats = {
+    total: projects.length,
+    public: projects.filter((p) => p.visibility === "public").length,
+    private: projects.filter((p) => p.visibility === "private").length,
+  }
+
+  return (
+    <div className={`min-h-screen transition-colors duration-300 ${theme.bg}`}>
+      <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+>>>>>>> Stashed changes
 
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {/* Page header */}
-        <div className="px-4 py-6 sm:px-0 flex justify-between items-center">
-          <div>
+        <div className="px-4 py-6 sm:px-0 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex-1">
             <h1 className={`text-3xl font-bold ${theme.highlight}`}>Mis Proyectos</h1>
-            <p className={`mt-1 text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
-              Gestiona tus proyectos personales
-            </p>
+            <p className={`mt-1 text-sm ${theme.muted}`}>Gestiona tus proyectos personales</p>
+
+            {/* Stats */}
+            <div className="mt-4 flex flex-wrap gap-4 text-sm">
+              <span className={theme.muted}>
+                Total: <span className={theme.highlight}>{stats.total}</span>
+              </span>
+              <span className={theme.muted}>
+                Públicos: <span className="text-green-600 dark:text-green-400">{stats.public}</span>
+              </span>
+              <span className={theme.muted}>
+                Privados: <span className="text-gray-600 dark:text-gray-400">{stats.private}</span>
+              </span>
+            </div>
           </div>
 
-          <div>
+          <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-3">
+            {/* Filter dropdown */}
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className={`rounded-md shadow-sm px-3 py-2 border ${theme.select}`}
+            >
+              <option value="all">Todos los proyectos</option>
+              <option value="public">Solo públicos</option>
+              <option value="private">Solo privados</option>
+            </select>
+
             {/* Create project button */}
             <button
               onClick={() => {
@@ -428,7 +514,6 @@ const Projects = () => {
               setIsFormOpen(false)
               setCurrentProject(null)
             }}
-            darkMode={darkMode}
           />
         )}
 
@@ -451,7 +536,7 @@ const Projects = () => {
               </svg>
               <span className={theme.highlight}>Cargando proyectos...</span>
             </div>
-          ) : projects.length === 0 ? (
+          ) : filteredProjects.length === 0 ? (
             <div className={`text-center py-12 ${theme.card} rounded-lg shadow`}>
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -461,39 +546,63 @@ const Projects = () => {
                   d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
                 />
               </svg>
-              <h3 className={`mt-2 text-sm font-medium ${theme.highlight}`}>No hay proyectos</h3>
-              <p className={`mt-1 text-sm ${theme.muted}`}>Comienza creando un nuevo proyecto.</p>
-              <div className="mt-6">
-                <button
-                  onClick={() => {
-                    setCurrentProject(null)
-                    setIsFormOpen(true)
-                  }}
-                  className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${darkMode ? "focus:ring-offset-gray-800" : ""}`}
-                >
-                  <svg
-                    className="mr-2 -ml-1 h-5 w-5"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+              <h3 className={`mt-2 text-sm font-medium ${theme.highlight}`}>
+                {filter === "all"
+                  ? "No hay proyectos"
+                  : `No hay proyectos ${filter === "public" ? "públicos" : "privados"}`}
+              </h3>
+              <p className={`mt-1 text-sm ${theme.muted}`}>
+                {filter === "all"
+                  ? "Comienza creando un nuevo proyecto."
+                  : `No tienes proyectos ${filter === "public" ? "públicos" : "privados"} aún.`}
+              </p>
+              {filter === "all" && (
+                <div className="mt-6">
+                  <button
+                    onClick={() => {
+                      setCurrentProject(null)
+                      setIsFormOpen(true)
+                    }}
+                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${darkMode ? "focus:ring-offset-gray-800" : ""}`}
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Nuevo Proyecto
-                </button>
-              </div>
+                    <svg
+                      className="mr-2 -ml-1 h-5 w-5"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Nuevo Proyecto
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
-            <ProjectList
-              projects={projects}
-              onEdit={handleEditProject}
-              onDelete={handleDeleteProject}
-              darkMode={darkMode}
-            />
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredProjects.map((project) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  onEdit={handleEditProject}
+                  onDelete={handleDeleteProject}
+                  showActions={true}
+                  showAuthor={false}
+                />
+              ))}
+            </div>
           )}
         </div>
       </div>
+
+      {/* Delete confirmation modal */}
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDeleteProject}
+        projectTitle={projectToDelete?.title}
+      />
     </div>
   )
 }
