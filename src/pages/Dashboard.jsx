@@ -6,15 +6,10 @@ import { useAuth } from "../context/AuthContext"
 import { useTheme } from "../context/ThemeContext"
 import { signOut } from "firebase/auth"
 import { auth } from "../utils/firebase"
-<<<<<<< Updated upstream
-import { collection, query, where, getDocs, limit } from "firebase/firestore"
-import { db } from "../utils/firebase"
-=======
 import { collection, query, where, getDocs } from "firebase/firestore"
 import { db } from "../utils/firebase"
-import Navbar from "../components/NavBar"
+import Navbar from "../components/Header"
 import ActivityTimeline from "../components/ActivityTimeline"
->>>>>>> Stashed changes
 
 const Dashboard = () => {
   const { user } = useAuth()
@@ -31,48 +26,6 @@ const Dashboard = () => {
   })
   const [loading, setLoading] = useState(true)
 
-<<<<<<< Updated upstream
-  // Fetch recent projects
-  useEffect(() => {
-    const fetchRecentProjects = async () => {
-      if (!user) return
-
-      try {
-        const q = query(collection(db, "projects"), where("userId", "==", user.uid), limit(3))
-
-        const querySnapshot = await getDocs(q)
-        const projects = []
-
-        querySnapshot.forEach((doc) => {
-          projects.push({
-            id: doc.id,
-            ...doc.data(),
-          })
-        })
-
-        setRecentProjects(projects)
-      } catch (error) {
-        console.error("Error fetching recent projects:", error)
-      }
-    }
-
-    fetchRecentProjects()
-  }, [user])
-
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth)
-      navigate("/login")
-    } catch (error) {
-      console.error("Error al cerrar sesión:", error)
-    }
-  }
-
-  // Get user's first name for greeting
-  const firstName = user?.displayName?.split(" ")[0] || user?.email?.split("@")[0] || ""
-
-=======
->>>>>>> Stashed changes
   // Theme classes
   const theme = {
     bg: darkMode ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-800",
@@ -286,12 +239,7 @@ const Dashboard = () => {
     const links = [
       { name: "Dashboard", active: true, path: "/dashboard" },
       { name: "Proyectos", active: false, path: "/projects" },
-<<<<<<< Updated upstream
-      { name: "Recursos", active: false, path: "#" },
-      { name: "Comunidad", active: false, path: "#" },
-=======
       { name: "Catálogo", active: false, path: "/catalog" },
->>>>>>> Stashed changes
     ]
 
     return links.map((link) => (
@@ -308,17 +256,10 @@ const Dashboard = () => {
   const renderProfileMenu = (isMobile = false) => (
     <div className={`${isMobile ? "mt-3 px-2 space-y-1" : ""}`}>
       <Link
-<<<<<<< Updated upstream
-        to="#"
-        className={`${isMobile ? "block" : ""} px-3 py-2 rounded-md text-sm font-medium ${theme.inactiveNav}`}
-      >
-        Tu Perfil
-=======
         to="/profile"
         className={`${isMobile ? "block" : ""} px-3 py-2 rounded-md text-sm font-medium ${theme.inactiveNav}`}
       >
         Mi Perfil
->>>>>>> Stashed changes
       </Link>
       <Link
         to="#"
@@ -359,143 +300,7 @@ const Dashboard = () => {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${theme.bg}`}>
-<<<<<<< Updated upstream
-      {/* Navbar */}
-      <nav className={`border-b ${theme.nav} shadow-sm`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo and desktop menu */}
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className={`text-2xl font-bold ${theme.accent}`}>MyOpenLab</span>
-              </div>
-              <div className="hidden md:block ml-10 flex items-baseline space-x-4">{renderNavLinks()}</div>
-            </div>
-
-            {/* Desktop right menu */}
-            <div className="hidden md:flex items-center">
-              {/* Dark mode toggle */}
-              <button
-                onClick={toggleDarkMode}
-                className={`p-2 rounded-full ${darkMode ? "bg-gray-700 text-yellow-400" : "bg-gray-100 text-gray-700"} mr-3`}
-                aria-label="Cambiar tema"
-              >
-                {darkMode ? renderSunIcon() : renderMoonIcon()}
-              </button>
-
-              {/* Notifications */}
-              <button
-                className={`p-1 rounded-full ${darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-black"} mr-3`}
-              >
-                <svg
-                  className="h-6 w-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                  />
-                </svg>
-              </button>
-
-              {/* User profile */}
-              <div className="relative">
-                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="flex items-center">
-                  <div
-                    className={`h-8 w-8 rounded-full flex items-center justify-center ${darkMode ? "bg-indigo-600" : "bg-indigo-100"}`}
-                  >
-                    <span className={`font-medium text-sm ${darkMode ? "text-white" : "text-indigo-700"}`}>
-                      {user?.email?.charAt(0).toUpperCase() || "U"}
-                    </span>
-                  </div>
-                </button>
-
-                {isMenuOpen && (
-                  <div
-                    className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 ${darkMode ? "bg-gray-800 ring-1 ring-black ring-opacity-5" : "bg-white ring-1 ring-black ring-opacity-5"}`}
-                  >
-                    {renderProfileMenu()}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Mobile menu button */}
-            <div className="flex md:hidden items-center">
-              {/* Dark mode toggle */}
-              <button
-                onClick={toggleDarkMode}
-                className={`p-2 rounded-full ${darkMode ? "bg-gray-700 text-yellow-400" : "bg-gray-100 text-gray-700"} mr-2`}
-              >
-                {darkMode ? renderSunIcon() : renderMoonIcon()}
-              </button>
-
-              {/* Menu toggle */}
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className={`p-2 rounded-md ${darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-700"}`}
-              >
-                {isMenuOpen ? (
-                  <svg
-                    className="h-6 w-6"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                ) : (
-                  <svg
-                    className="h-6 w-6"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile menu */}
-        {isMenuOpen && (
-          <div className="md:hidden">
-            <div className={`px-2 pt-2 pb-3 space-y-1 ${darkMode ? "bg-gray-800" : "bg-gray-50"}`}>
-              {renderNavLinks(true)}
-            </div>
-            <div
-              className={`pt-4 pb-3 border-t ${darkMode ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-gray-50"}`}
-            >
-              <div className="flex items-center px-5">
-                <div
-                  className={`h-10 w-10 rounded-full flex items-center justify-center ${darkMode ? "bg-indigo-600" : "bg-indigo-100"}`}
-                >
-                  <span className={`font-medium text-lg ${darkMode ? "text-white" : "text-indigo-700"}`}>
-                    {user?.email?.charAt(0).toUpperCase() || "U"}
-                  </span>
-                </div>
-                <div className="ml-3">
-                  <div className={theme.highlight}>{user?.displayName || user?.email}</div>
-                  <div className={theme.muted}>{user?.email}</div>
-                </div>
-              </div>
-              {renderProfileMenu(true)}
-            </div>
-          </div>
-        )}
-      </nav>
-=======
       <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
->>>>>>> Stashed changes
 
       {/* Main content */}
       <main>
@@ -612,20 +417,6 @@ const Dashboard = () => {
                   className={`rounded-lg shadow ${theme.card} divide-y ${darkMode ? "divide-gray-700" : "divide-gray-200"}`}
                 >
                   {recentProjects.map((project) => (
-<<<<<<< Updated upstream
-                    <div
-                      key={project.id}
-                      className={`${theme.card} overflow-hidden shadow rounded-lg border ${darkMode ? "border-gray-700" : "border-gray-200"}`}
-                    >
-                      <div className="px-4 py-5 sm:p-6">
-                        <h3 className={`text-lg font-medium ${theme.highlight} truncate`}>{project.title}</h3>
-                        <p className={`mt-1 text-sm ${theme.muted} line-clamp-2`}>{project.description}</p>
-                      </div>
-                      <div className={`border-t ${darkMode ? "border-gray-700" : "border-gray-200"} px-4 py-4 sm:px-6`}>
-                        <Link
-                          to="/projects"
-                          className={`text-sm font-medium ${darkMode ? "text-indigo-400 hover:text-indigo-300" : "text-indigo-600 hover:text-indigo-700"}`}
-=======
                     <div key={project.id} className="p-6">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -682,7 +473,6 @@ const Dashboard = () => {
                         <Link
                           to={`/project/${project.id}`}
                           className={`ml-4 text-sm font-medium ${darkMode ? "text-indigo-400 hover:text-indigo-300" : "text-indigo-600 hover:text-indigo-700"}`}
->>>>>>> Stashed changes
                         >
                           Ver detalles
                         </Link>
