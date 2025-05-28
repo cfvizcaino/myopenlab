@@ -1,10 +1,4 @@
-<<<<<<< Updated upstream
-import { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../utils/firebase';
-=======
 "use client"
->>>>>>> Stashed changes
 
 import { createContext, useContext, useState, useEffect } from "react"
 import { onAuthStateChanged } from "firebase/auth"
@@ -22,25 +16,6 @@ export const useAuth = () => {
 }
 
 export const AuthProvider = ({ children }) => {
-<<<<<<< Updated upstream
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
-    return unsubscribe;
-  }, []);
-
-  return (
-    <AuthContext.Provider value={{ user, loading }}> {/* Exportar loading */}
-      {children}
-    </AuthContext.Provider>
-  );
-};
-=======
   const [user, setUser] = useState(null)
   const [userData, setUserData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -83,7 +58,6 @@ export const AuthProvider = ({ children }) => {
 
     return () => unsubscribe()
   }, [])
->>>>>>> Stashed changes
 
   const value = {
     user,
