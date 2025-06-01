@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { useTheme } from "../context/ThemeContext"
+import { useAccessibility } from "../context/AccessibilityContext"
 import { doc, getDoc } from "firebase/firestore"
 import { db } from "../utils/firebase"
 import { formatDistanceToNow } from "date-fns"
@@ -15,19 +16,18 @@ const ProjectDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const { darkMode } = useTheme()
+  const { getContrastTheme } = useAccessibility()
   const [project, setProject] = useState(null)
   const [author, setAuthor] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
-  // Theme classes
-  const theme = {
-    bg: darkMode ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-800",
-    card: darkMode ? "bg-gray-800" : "bg-white",
-    highlight: darkMode ? "text-white" : "text-gray-900",
-    muted: darkMode ? "text-gray-400" : "text-gray-500",
-    accent: darkMode ? "text-indigo-400" : "text-indigo-600",
-    border: darkMode ? "border-gray-700" : "border-gray-200",
+  // Theme classes - now contrast-aware
+  const theme = getContrastTheme(darkMode)
+
+  // Extend theme with project-specific properties
+  const extendedTheme = {
+    ...theme,
     badge: darkMode ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-700",
     link: darkMode ? "text-indigo-400 hover:text-indigo-300" : "text-indigo-600 hover:text-indigo-700",
   }
@@ -134,7 +134,10 @@ const ProjectDetail = () => {
       <div className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
         {/* Back button */}
         <div className="px-4 sm:px-0 mb-6">
-          <button onClick={() => navigate(-1)} className={`inline-flex items-center text-sm font-medium ${theme.link}`}>
+          <button
+            onClick={() => navigate(-1)}
+            className={`inline-flex items-center text-sm font-medium ${extendedTheme.link}`}
+          >
             <svg className="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -267,7 +270,7 @@ const ProjectDetail = () => {
                   {project.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${theme.badge}`}
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${extendedTheme.badge}`}
                     >
                       {tag}
                     </span>

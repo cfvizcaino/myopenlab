@@ -5,9 +5,11 @@ import { useTheme } from "../context/ThemeContext"
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage"
 import { storage } from "../utils/firebase"
 import { useAuth } from "../context/AuthContext"
+import { useAccessibility } from "../context/AccessibilityContext"
 
 const ProjectForm = ({ project, onSubmit, onCancel }) => {
   const { darkMode } = useTheme()
+  const { getContrastTheme } = useAccessibility()
   const { user } = useAuth()
   const [formData, setFormData] = useState({
     title: "",
@@ -23,20 +25,8 @@ const ProjectForm = ({ project, onSubmit, onCancel }) => {
   const [uploading, setUploading] = useState(false)
   const [imagePreview, setImagePreview] = useState("")
 
-  // Theme classes
-  const theme = {
-    modal: darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900",
-    input: darkMode
-      ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-      : "bg-white border-gray-300 text-gray-900 placeholder-gray-400",
-    button: {
-      primary: "bg-indigo-600 hover:bg-indigo-700 text-white",
-      secondary: darkMode ? "bg-gray-700 hover:bg-gray-600 text-white" : "bg-white hover:bg-gray-50 text-gray-700",
-      danger: "bg-red-600 hover:bg-red-700 text-white",
-    },
-    overlay: darkMode ? "bg-black bg-opacity-75" : "bg-gray-500 bg-opacity-75",
-    select: darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900",
-  }
+  // Theme classes with contrast support
+  const theme = getContrastTheme(darkMode)
 
   // Initialize form with project data if editing
   useEffect(() => {
@@ -90,20 +80,43 @@ const ProjectForm = ({ project, onSubmit, onCancel }) => {
 
     setUploading(true)
     try {
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("El archivo es demasiado grande. Máximo 5MB.")
+      }
+
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        throw new Error("Por favor selecciona un archivo de imagen válido.")
+      }
+
+      console.log("Starting image upload:", file.name, file.size)
+
       // Create unique filename
       const timestamp = Date.now()
-      const filename = `${timestamp}_${file.name}`
+      const fileExtension = file.name.split(".").pop()
+      const filename = `project_${user.uid}_${timestamp}.${fileExtension}`
       const imageRef = ref(storage, `project-images/${user.uid}/${filename}`)
 
+      console.log("Uploading to path:", `project-images/${user.uid}/${filename}`)
+
       // Upload image
-      await uploadBytes(imageRef, file)
+      const uploadResult = await uploadBytes(imageRef, file)
+      console.log("Upload successful:", uploadResult)
+
       const downloadURL = await getDownloadURL(imageRef)
+      console.log("Download URL obtained:", downloadURL)
 
       // Delete old image if exists and it's different
       if (formData.featuredImage && formData.featuredImage !== downloadURL) {
         try {
-          const oldImageRef = ref(storage, formData.featuredImage)
-          await deleteObject(oldImageRef)
+          // Extract the path from the old URL
+          const oldUrl = formData.featuredImage
+          if (oldUrl.includes("project-images/")) {
+            const oldImageRef = ref(storage, formData.featuredImage)
+            await deleteObject(oldImageRef)
+            console.log("Old image deleted")
+          }
         } catch (error) {
           console.log("Could not delete old image:", error)
         }
@@ -114,11 +127,13 @@ const ProjectForm = ({ project, onSubmit, onCancel }) => {
         featuredImage: downloadURL,
       }))
       setImagePreview(downloadURL)
+
+      console.log("Image upload completed successfully")
     } catch (error) {
       console.error("Error uploading image:", error)
       setErrors((prev) => ({
         ...prev,
-        featuredImage: "Error al subir la imagen",
+        featuredImage: `Error al subir la imagen: ${error.message}`,
       }))
     } finally {
       setUploading(false)
@@ -187,6 +202,8 @@ const ProjectForm = ({ project, onSubmit, onCancel }) => {
           .split(",")
           .map((tag) => tag.trim())
           .filter((tag) => tag.length > 0),
+        // Ensure visibility is always set
+        visibility: formData.visibility || "public",
       }
       onSubmit(projectData)
     }
@@ -328,13 +345,33 @@ const ProjectForm = ({ project, onSubmit, onCancel }) => {
                   onChange={(e) => {
                     const file = e.target.files?.[0]
                     if (file) {
+                      console.log("File selected:", file.name, file.size, file.type)
                       handleImageUpload(file)
                     }
                   }}
-                  className="mt-2 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                  className="mt-2 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900 dark:file:text-indigo-300"
                   disabled={uploading}
                 />
-                {uploading && <p className="mt-1 text-sm text-blue-500">Subiendo imagen...</p>}
+                {uploading && (
+                  <div className="mt-2 flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    <span className="text-sm text-blue-500">Subiendo imagen...</span>
+                  </div>
+                )}
                 {errors.featuredImage && <p className="mt-1 text-sm text-red-500">{errors.featuredImage}</p>}
               </div>
 

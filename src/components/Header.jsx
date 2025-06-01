@@ -4,15 +4,21 @@ import { useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { useTheme } from "../context/ThemeContext"
+import { useAccessibility } from "../context/AccessibilityContext"
 import { signOut } from "firebase/auth"
 import { auth } from "../utils/firebase"
+import AccessibilityControls from "./AccessibilityControls"
 
-const Header = ({ theme }) => {
+const Header = ({ theme: propTheme }) => {
   const { user, userData } = useAuth()
   const { darkMode, toggleDarkMode } = useTheme()
+  const { getContrastTheme } = useAccessibility()
   const location = useLocation()
   const navigate = useNavigate()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+  // Use contrast-aware theme
+  const theme = getContrastTheme(darkMode)
 
   const handleSignOut = async () => {
     try {
@@ -40,13 +46,7 @@ const Header = ({ theme }) => {
         key={link.name}
         to={link.path}
         className={`${isMobile ? "block" : ""} px-3 py-2 rounded-md text-sm font-medium ${
-          link.active
-            ? darkMode
-              ? "bg-gray-900 text-white"
-              : "bg-indigo-50 text-indigo-700"
-            : darkMode
-              ? "text-gray-300 hover:bg-gray-700 hover:text-white"
-              : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+          link.active ? `${theme.accent} bg-opacity-10` : `${theme.text.secondary} hover:${theme.text.primary}`
         }`}
       >
         {link.name}
@@ -58,31 +58,13 @@ const Header = ({ theme }) => {
     <div className={`${isMobile ? "mt-3 px-2 space-y-1" : ""}`}>
       <Link
         to="/profile"
-        className={`${isMobile ? "block" : ""} px-3 py-2 rounded-md text-sm font-medium ${
-          darkMode
-            ? "text-gray-300 hover:bg-gray-700 hover:text-white"
-            : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
-        }`}
+        className={`${isMobile ? "block" : ""} px-3 py-2 rounded-md text-sm font-medium ${theme.text.secondary} hover:${theme.text.primary}`}
       >
         Mi Perfil
       </Link>
-      <Link
-        to="#"
-        className={`${isMobile ? "block" : ""} px-3 py-2 rounded-md text-sm font-medium ${
-          darkMode
-            ? "text-gray-300 hover:bg-gray-700 hover:text-white"
-            : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
-        }`}
-      >
-        Configuración
-      </Link>
       <button
         onClick={handleSignOut}
-        className={`${isMobile ? "block w-full text-left" : ""} px-3 py-2 rounded-md text-sm font-medium ${
-          darkMode
-            ? "text-gray-300 hover:bg-gray-700 hover:text-white"
-            : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
-        }`}
+        className={`${isMobile ? "block w-full text-left" : ""} px-3 py-2 rounded-md text-sm font-medium ${theme.text.secondary} hover:${theme.text.primary}`}
       >
         Cerrar Sesión
       </button>
@@ -112,18 +94,13 @@ const Header = ({ theme }) => {
   )
 
   return (
-    <nav
-      className={`border-b ${theme?.nav || (darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")} shadow-sm`}
-    >
+    <nav className={`border-b ${theme.nav} ${theme.border} shadow-sm`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo and desktop menu */}
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <Link
-                to="/dashboard"
-                className={`text-2xl font-bold ${theme?.accent || (darkMode ? "text-indigo-400" : "text-indigo-600")}`}
-              >
+              <Link to="/dashboard" className={`text-2xl font-bold ${theme.accent}`}>
                 MyOpenLab
               </Link>
             </div>
@@ -131,11 +108,14 @@ const Header = ({ theme }) => {
           </div>
 
           {/* Desktop right menu */}
-          <div className="hidden md:flex items-center">
+          <div className="hidden md:flex items-center space-x-3">
+            {/* Accessibility Controls */}
+            <AccessibilityControls />
+
             {/* Dark mode toggle */}
             <button
               onClick={toggleDarkMode}
-              className={`p-2 rounded-full ${darkMode ? "bg-gray-700 text-yellow-400" : "bg-gray-100 text-gray-700"} mr-3`}
+              className={`p-2 rounded-full ${theme.button.secondary} transition-colors`}
               aria-label="Cambiar tema"
             >
               {darkMode ? renderSunIcon() : renderMoonIcon()}
@@ -144,9 +124,7 @@ const Header = ({ theme }) => {
             {user && (
               <>
                 {/* Notifications */}
-                <button
-                  className={`p-1 rounded-full ${darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-black"} mr-3`}
-                >
+                <button className={`p-1 rounded-full ${theme.text.secondary} hover:${theme.text.primary}`}>
                   <svg
                     className="h-6 w-6"
                     xmlns="http://www.w3.org/2000/svg"
@@ -165,9 +143,12 @@ const Header = ({ theme }) => {
 
                 {/* User profile */}
                 <div className="relative">
-                  <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="flex items-center">
+                  <button
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    className="flex items-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
                     <div
-                      className={`h-8 w-8 rounded-full flex items-center justify-center overflow-hidden ${darkMode ? "bg-indigo-600" : "bg-indigo-100"}`}
+                      className={`h-8 w-8 rounded-full flex items-center justify-center overflow-hidden ${theme.profile.bg}`}
                     >
                       {userData?.profilePicture ? (
                         <img
@@ -176,7 +157,7 @@ const Header = ({ theme }) => {
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <span className={`font-medium text-sm ${darkMode ? "text-white" : "text-indigo-700"}`}>
+                        <span className={`font-medium text-sm ${theme.profile.initial}`}>
                           {user?.email?.charAt(0).toUpperCase() || "U"}
                         </span>
                       )}
@@ -185,7 +166,7 @@ const Header = ({ theme }) => {
 
                   {isMenuOpen && (
                     <div
-                      className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 ${darkMode ? "bg-gray-800 ring-1 ring-black ring-opacity-5" : "bg-white ring-1 ring-black ring-opacity-5"}`}
+                      className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 ${theme.card} border-2 ${theme.border} z-50`}
                     >
                       {renderProfileMenu()}
                     </div>
@@ -196,19 +177,19 @@ const Header = ({ theme }) => {
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex md:hidden items-center">
+          <div className="flex md:hidden items-center space-x-2">
+            {/* Accessibility Controls */}
+            <AccessibilityControls />
+
             {/* Dark mode toggle */}
-            <button
-              onClick={toggleDarkMode}
-              className={`p-2 rounded-full ${darkMode ? "bg-gray-700 text-yellow-400" : "bg-gray-100 text-gray-700"} mr-2`}
-            >
+            <button onClick={toggleDarkMode} className={`p-2 rounded-full ${theme.button.secondary}`}>
               {darkMode ? renderSunIcon() : renderMoonIcon()}
             </button>
 
             {user && (
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className={`p-2 rounded-md ${darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-700"}`}
+                className={`p-2 rounded-md ${theme.text.secondary} hover:${theme.text.primary}`}
               >
                 {isMenuOpen ? (
                   <svg
@@ -240,15 +221,11 @@ const Header = ({ theme }) => {
       {/* Mobile menu */}
       {isMenuOpen && user && (
         <div className="md:hidden">
-          <div className={`px-2 pt-2 pb-3 space-y-1 ${darkMode ? "bg-gray-800" : "bg-gray-50"}`}>
-            {renderNavLinks(true)}
-          </div>
-          <div
-            className={`pt-4 pb-3 border-t ${darkMode ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-gray-50"}`}
-          >
+          <div className={`px-2 pt-2 pb-3 space-y-1 ${theme.card}`}>{renderNavLinks(true)}</div>
+          <div className={`pt-4 pb-3 border-t ${theme.border} ${theme.card}`}>
             <div className="flex items-center px-5">
               <div
-                className={`h-10 w-10 rounded-full flex items-center justify-center overflow-hidden ${darkMode ? "bg-indigo-600" : "bg-indigo-100"}`}
+                className={`h-10 w-10 rounded-full flex items-center justify-center overflow-hidden ${theme.profile.bg}`}
               >
                 {userData?.profilePicture ? (
                   <img
@@ -257,16 +234,16 @@ const Header = ({ theme }) => {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <span className={`font-medium text-lg ${darkMode ? "text-white" : "text-indigo-700"}`}>
+                  <span className={`font-medium text-lg ${theme.profile.initial}`}>
                     {user?.email?.charAt(0).toUpperCase() || "U"}
                   </span>
                 )}
               </div>
               <div className="ml-3">
-                <div className={darkMode ? "text-white" : "text-gray-900"}>
+                <div className={theme.text.primary}>
                   {userData?.firstName} {userData?.lastName}
                 </div>
-                <div className={darkMode ? "text-gray-400" : "text-gray-500"}>{user?.email}</div>
+                <div className={theme.text.secondary}>{user?.email}</div>
               </div>
             </div>
             {renderProfileMenu(true)}

@@ -13,7 +13,6 @@ import {
   addDoc,
   query,
   where,
-  orderBy,
   getDocs,
   deleteDoc,
 } from "firebase/firestore"
@@ -31,6 +30,7 @@ const ProjectInteractions = ({ project, onProjectUpdate }) => {
   const [isFavorited, setIsFavorited] = useState(false)
   const [loading, setLoading] = useState(false)
   const [commentsLoading, setCommentsLoading] = useState(true)
+  const [submittingComment, setSubmittingComment] = useState(false)
 
   // Theme classes
   const theme = {
@@ -93,31 +93,50 @@ const ProjectInteractions = ({ project, onProjectUpdate }) => {
   const loadComments = async () => {
     setCommentsLoading(true)
     try {
-      const commentsQuery = query(
-        collection(db, "comments"),
-        where("projectId", "==", project.id),
-        orderBy("createdAt", "desc"),
-      )
+      console.log("Loading comments for project:", project.id)
+
+      // First try without orderBy to see if we can get comments at all
+      const commentsQuery = query(collection(db, "comments"), where("projectId", "==", project.id))
 
       const querySnapshot = await getDocs(commentsQuery)
+      console.log("Found comments:", querySnapshot.size)
+
       const commentsData = []
 
-      for (const doc of querySnapshot.docs) {
-        const commentData = { id: doc.id, ...doc.data() }
+      for (const commentDoc of querySnapshot.docs) {
+        const commentData = { id: commentDoc.id, ...commentDoc.data() }
+        console.log("Processing comment:", commentData)
 
         // Fetch author data
         try {
           const authorDoc = await getDoc(doc(db, "users", commentData.userId))
           if (authorDoc.exists()) {
             commentData.author = authorDoc.data()
+            console.log("Found author:", commentData.author)
+          } else {
+            console.log("Author not found for userId:", commentData.userId)
+            commentData.author = { firstName: "Usuario", lastName: "Desconocido" }
           }
         } catch (error) {
           console.error("Error fetching comment author:", error)
+          commentData.author = { firstName: "Usuario", lastName: "Desconocido" }
         }
 
         commentsData.push(commentData)
       }
 
+      // Sort comments by date (newest first) in JavaScript since Firestore orderBy might fail
+      commentsData.sort((a, b) => {
+        const getTime = (timestamp) => {
+          if (!timestamp) return 0
+          if (timestamp.toDate) return timestamp.toDate().getTime()
+          if (timestamp.seconds) return timestamp.seconds * 1000
+          return new Date(timestamp).getTime()
+        }
+        return getTime(b.createdAt) - getTime(a.createdAt)
+      })
+
+      console.log("Final comments data:", commentsData)
       setComments(commentsData)
     } catch (error) {
       console.error("Error loading comments:", error)
@@ -188,23 +207,53 @@ const ProjectInteractions = ({ project, onProjectUpdate }) => {
 
   const handleAddComment = async (e) => {
     e.preventDefault()
-    if (!user || !newComment.trim()) return
+    if (!user || !newComment.trim()) {
+      console.log("Cannot add comment - missing user or content")
+      return
+    }
 
-    setLoading(true)
+    setSubmittingComment(true)
     try {
-      await addDoc(collection(db, "comments"), {
+      console.log("Adding comment:", {
         projectId: project.id,
         userId: user.uid,
         content: newComment.trim(),
-        createdAt: new Date(),
       })
 
+      const commentData = {
+        projectId: project.id,
+        userId: user.uid,
+        content: newComment.trim(),
+        createdAt: new Date(), // Use regular Date instead of Timestamp
+      }
+
+      const docRef = await addDoc(collection(db, "comments"), commentData)
+      console.log("Comment added with ID:", docRef.id)
+
       setNewComment("")
-      loadComments() // Reload comments
+
+      // Immediately add the comment to local state for instant feedback
+      const newCommentWithAuthor = {
+        id: docRef.id,
+        ...commentData,
+        author: {
+          firstName: userData?.firstName || user.email?.split("@")[0] || "Usuario",
+          lastName: userData?.lastName || "",
+          profilePicture: userData?.profilePicture || "",
+        },
+      }
+
+      setComments((prev) => [newCommentWithAuthor, ...prev])
+
+      // Also reload from database to ensure consistency
+      setTimeout(() => {
+        loadComments()
+      }, 1000)
     } catch (error) {
       console.error("Error adding comment:", error)
+      alert(`Error al enviar el comentario: ${error.message}`)
     } finally {
-      setLoading(false)
+      setSubmittingComment(false)
     }
   }
 
@@ -212,16 +261,28 @@ const ProjectInteractions = ({ project, onProjectUpdate }) => {
     if (!user) return
 
     try {
+      console.log("Deleting comment:", commentId)
       await deleteDoc(doc(db, "comments", commentId))
+      console.log("Comment deleted successfully")
       loadComments() // Reload comments
     } catch (error) {
       console.error("Error deleting comment:", error)
+      alert(`Error al eliminar el comentario: ${error.message}`)
     }
   }
 
   const formatDate = (timestamp) => {
     if (!timestamp) return "Fecha desconocida"
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+
+    let date
+    if (timestamp.toDate) {
+      date = timestamp.toDate()
+    } else if (timestamp.seconds) {
+      date = new Date(timestamp.seconds * 1000)
+    } else {
+      date = new Date(timestamp)
+    }
+
     return formatDistanceToNow(date, {
       addSuffix: true,
       locale: es,
@@ -319,16 +380,17 @@ const ProjectInteractions = ({ project, onProjectUpdate }) => {
                     placeholder="Escribe un comentario..."
                     rows="3"
                     className={`w-full rounded-md shadow-sm px-3 py-2 border ${theme.input} resize-none`}
+                    disabled={submittingComment}
                   />
                 </div>
               </div>
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  disabled={!newComment.trim() || loading}
+                  disabled={!newComment.trim() || submittingComment}
                   className={`px-4 py-2 text-sm font-medium rounded-md ${theme.button.primary} disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  {loading ? "Enviando..." : "Comentar"}
+                  {submittingComment ? "Enviando..." : "Comentar"}
                 </button>
               </div>
             </form>

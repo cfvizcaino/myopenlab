@@ -3,19 +3,20 @@
 import { Link } from "react-router-dom"
 import { useTheme } from "../context/ThemeContext"
 import { useAuth } from "../context/AuthContext"
+import { useAccessibility } from "../context/AccessibilityContext"
+import AccessibilityControls from "../components/AccessibilityControls"
 
 const Landing = () => {
   const { darkMode, toggleDarkMode } = useTheme()
   const { user } = useAuth()
+  const { getContrastTheme } = useAccessibility()
 
-  // Theme classes
-  const theme = {
-    bg: darkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-900",
-    card: darkMode ? "bg-gray-800" : "bg-white",
-    highlight: darkMode ? "text-white" : "text-gray-900",
-    muted: darkMode ? "text-gray-400" : "text-gray-600",
-    accent: darkMode ? "text-indigo-400" : "text-indigo-600",
-    border: darkMode ? "border-gray-700" : "border-gray-200",
+  // Theme classes - now contrast-aware
+  const theme = getContrastTheme(darkMode)
+
+  // Extend theme with landing-specific properties
+  const extendedTheme = {
+    ...theme,
     gradient: darkMode ? "from-gray-900 via-purple-900 to-violet-900" : "from-blue-50 via-indigo-50 to-purple-50",
   }
 
@@ -108,33 +109,47 @@ const Landing = () => {
   )
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${theme.bg}`}>
+    <div className={`min-h-screen transition-colors duration-300 ${extendedTheme.bg}`}>
       {/* Navigation */}
-      <nav className={`border-b ${theme.border} backdrop-blur-sm bg-opacity-90`}>
+      <nav className={`border-b ${extendedTheme.border} backdrop-blur-sm bg-opacity-90 relative z-50`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <Link to="/" className={`text-2xl font-bold ${theme.accent}`}>
+              <Link to="/" className={`text-2xl font-bold ${extendedTheme.accent}`}>
                 MyOpenLab
               </Link>
             </div>
 
             {/* Navigation Links */}
             <div className="hidden md:flex items-center space-x-8">
-              <Link to="/catalog" className={`text-sm font-medium ${theme.muted} hover:${theme.highlight}`}>
+              <Link
+                to="/catalog"
+                className={`text-sm font-medium ${extendedTheme.muted} hover:${extendedTheme.highlight}`}
+              >
                 Explorar Proyectos
               </Link>
-              <a href="#features" className={`text-sm font-medium ${theme.muted} hover:${theme.highlight}`}>
+              <a
+                href="#features"
+                className={`text-sm font-medium ${extendedTheme.muted} hover:${extendedTheme.highlight}`}
+              >
                 Características
               </a>
-              <a href="#about" className={`text-sm font-medium ${theme.muted} hover:${theme.highlight}`}>
+              <a
+                href="#about"
+                className={`text-sm font-medium ${extendedTheme.muted} hover:${extendedTheme.highlight}`}
+              >
                 Acerca de
               </a>
             </div>
 
             {/* Right side */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 relative z-50">
+              {/* Accessibility Controls */}
+              <div className="relative z-50">
+                <AccessibilityControls />
+              </div>
+
               {/* Dark mode toggle */}
               <button
                 onClick={toggleDarkMode}
@@ -154,7 +169,10 @@ const Landing = () => {
                 </Link>
               ) : (
                 <div className="flex items-center space-x-3">
-                  <Link to="/login" className={`text-sm font-medium ${theme.muted} hover:${theme.highlight}`}>
+                  <Link
+                    to="/login"
+                    className={`text-sm font-medium ${extendedTheme.muted} hover:${extendedTheme.highlight}`}
+                  >
                     Iniciar Sesión
                   </Link>
                   <Link
@@ -171,15 +189,15 @@ const Landing = () => {
       </nav>
 
       {/* Hero Section */}
-      <div className={`relative overflow-hidden bg-gradient-to-br ${theme.gradient}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+      <div className={`relative overflow-hidden bg-gradient-to-br ${extendedTheme.gradient} pt-8`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           <div className="text-center">
-            <h1 className={`text-4xl md:text-6xl font-bold ${theme.highlight} mb-6`}>
+            <h1 className={`text-4xl md:text-6xl font-bold ${extendedTheme.highlight} mb-6`}>
               Gestiona y Comparte
               <br />
-              <span className={theme.accent}>Tus Proyectos</span>
+              <span className={extendedTheme.accent}>Tus Proyectos</span>
             </h1>
-            <p className={`text-xl ${theme.muted} mb-8 max-w-3xl mx-auto`}>
+            <p className={`text-xl ${extendedTheme.muted} mb-8 max-w-3xl mx-auto`}>
               La plataforma definitiva para desarrolladores que quieren organizar sus proyectos, colaborar con otros y
               contribuir a la comunidad open source.
             </p>
@@ -207,7 +225,7 @@ const Landing = () => {
                   </Link>
                   <Link
                     to="/catalog"
-                    className={`inline-flex items-center px-8 py-3 border ${theme.border} text-base font-medium rounded-md ${theme.highlight} ${theme.card} hover:bg-opacity-80`}
+                    className={`inline-flex items-center px-8 py-3 border ${extendedTheme.border} text-base font-medium rounded-md ${extendedTheme.highlight} ${extendedTheme.card} hover:bg-opacity-80`}
                   >
                     Explorar Proyectos
                   </Link>
@@ -219,13 +237,13 @@ const Landing = () => {
       </div>
 
       {/* Stats Section */}
-      <div className={`py-16 ${theme.card}`}>
+      <div className={`py-16 ${extendedTheme.card}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
-                <div className={`text-3xl md:text-4xl font-bold ${theme.accent} mb-2`}>{stat.number}</div>
-                <div className={`text-sm ${theme.muted}`}>{stat.label}</div>
+                <div className={`text-3xl md:text-4xl font-bold ${extendedTheme.accent} mb-2`}>{stat.number}</div>
+                <div className={`text-sm ${extendedTheme.muted}`}>{stat.label}</div>
               </div>
             ))}
           </div>
@@ -233,23 +251,26 @@ const Landing = () => {
       </div>
 
       {/* Features Section */}
-      <div id="features" className={`py-24 ${theme.bg}`}>
+      <div id="features" className={`py-24 ${extendedTheme.bg}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className={`text-3xl md:text-4xl font-bold ${theme.highlight} mb-4`}>
+            <h2 className={`text-3xl md:text-4xl font-bold ${extendedTheme.highlight} mb-4`}>
               Todo lo que necesitas para gestionar tus proyectos
             </h2>
-            <p className={`text-xl ${theme.muted} max-w-3xl mx-auto`}>
+            <p className={`text-xl ${extendedTheme.muted} max-w-3xl mx-auto`}>
               Herramientas poderosas y fáciles de usar para desarrolladores de todos los niveles.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
-              <div key={index} className={`${theme.card} p-6 rounded-lg shadow-lg border ${theme.border}`}>
-                <div className={`${theme.accent} mb-4`}>{feature.icon}</div>
-                <h3 className={`text-xl font-semibold ${theme.highlight} mb-2`}>{feature.title}</h3>
-                <p className={`${theme.muted}`}>{feature.description}</p>
+              <div
+                key={index}
+                className={`${extendedTheme.card} p-6 rounded-lg shadow-lg border ${extendedTheme.border}`}
+              >
+                <div className={`${extendedTheme.accent} mb-4`}>{feature.icon}</div>
+                <h3 className={`text-xl font-semibold ${extendedTheme.highlight} mb-2`}>{feature.title}</h3>
+                <p className={`${extendedTheme.muted}`}>{feature.description}</p>
               </div>
             ))}
           </div>
@@ -288,61 +309,65 @@ const Landing = () => {
       </div>
 
       {/* Footer */}
-      <footer className={`${theme.card} border-t ${theme.border}`}>
+      <footer className={`${extendedTheme.card} border-t ${extendedTheme.border}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
-              <Link to="/" className={`text-2xl font-bold ${theme.accent} mb-4 block`}>
+              <Link to="/" className={`text-2xl font-bold ${extendedTheme.accent} mb-4 block`}>
                 MyOpenLab
               </Link>
-              <p className={`${theme.muted} mb-4 max-w-md`}>
+              <p className={`${extendedTheme.muted} mb-4 max-w-md`}>
                 La plataforma definitiva para gestionar y compartir proyectos de desarrollo. Construida por
                 desarrolladores, para desarrolladores.
               </p>
             </div>
             <div>
-              <h3 className={`text-sm font-semibold ${theme.highlight} uppercase tracking-wider mb-4`}>Producto</h3>
+              <h3 className={`text-sm font-semibold ${extendedTheme.highlight} uppercase tracking-wider mb-4`}>
+                Producto
+              </h3>
               <ul className="space-y-2">
                 <li>
-                  <Link to="/catalog" className={`text-sm ${theme.muted} hover:${theme.highlight}`}>
+                  <Link to="/catalog" className={`text-sm ${extendedTheme.muted} hover:${extendedTheme.highlight}`}>
                     Explorar Proyectos
                   </Link>
                 </li>
                 <li>
-                  <a href="#features" className={`text-sm ${theme.muted} hover:${theme.highlight}`}>
+                  <a href="#features" className={`text-sm ${extendedTheme.muted} hover:${extendedTheme.highlight}`}>
                     Características
                   </a>
                 </li>
                 <li>
-                  <Link to="/register" className={`text-sm ${theme.muted} hover:${theme.highlight}`}>
+                  <Link to="/register" className={`text-sm ${extendedTheme.muted} hover:${extendedTheme.highlight}`}>
                     Registrarse
                   </Link>
                 </li>
               </ul>
             </div>
             <div>
-              <h3 className={`text-sm font-semibold ${theme.highlight} uppercase tracking-wider mb-4`}>Soporte</h3>
+              <h3 className={`text-sm font-semibold ${extendedTheme.highlight} uppercase tracking-wider mb-4`}>
+                Soporte
+              </h3>
               <ul className="space-y-2">
                 <li>
-                  <a href="#" className={`text-sm ${theme.muted} hover:${theme.highlight}`}>
+                  <a href="#" className={`text-sm ${extendedTheme.muted} hover:${extendedTheme.highlight}`}>
                     Documentación
                   </a>
                 </li>
                 <li>
-                  <a href="#" className={`text-sm ${theme.muted} hover:${theme.highlight}`}>
+                  <a href="#" className={`text-sm ${extendedTheme.muted} hover:${extendedTheme.highlight}`}>
                     Contacto
                   </a>
                 </li>
                 <li>
-                  <a href="#" className={`text-sm ${theme.muted} hover:${theme.highlight}`}>
+                  <a href="#" className={`text-sm ${extendedTheme.muted} hover:${extendedTheme.highlight}`}>
                     FAQ
                   </a>
                 </li>
               </ul>
             </div>
           </div>
-          <div className={`mt-8 pt-8 border-t ${theme.border} text-center`}>
-            <p className={`text-sm ${theme.muted}`}>© 2024 MyOpenLab. Todos los derechos reservados.</p>
+          <div className={`mt-8 pt-8 border-t ${extendedTheme.border} text-center`}>
+            <p className={`text-sm ${extendedTheme.muted}`}>© 2024 MyOpenLab. Todos los derechos reservados.</p>
           </div>
         </div>
       </footer>

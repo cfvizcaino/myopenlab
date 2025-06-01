@@ -1,25 +1,16 @@
 "use client"
 
 import { useTheme } from "../context/ThemeContext"
+import { useAccessibility } from "../context/AccessibilityContext"
 
 const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, projectTitle }) => {
   const { darkMode } = useTheme()
+  const { getContrastTheme } = useAccessibility()
+
+  // Theme classes with contrast support
+  const theme = getContrastTheme(darkMode)
 
   if (!isOpen) return null
-
-  // Theme classes
-  const theme = {
-    modal: darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900",
-    button: {
-      primary: "bg-red-600 hover:bg-red-700 text-white",
-      secondary: darkMode ? "bg-gray-700 hover:bg-gray-600 text-white" : "bg-white hover:bg-gray-50 text-gray-700",
-    },
-    overlay: darkMode ? "bg-black bg-opacity-75" : "bg-gray-500 bg-opacity-75",
-    text: {
-      primary: darkMode ? "text-white" : "text-gray-900",
-      secondary: darkMode ? "text-gray-300" : "text-gray-500",
-    },
-  }
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">

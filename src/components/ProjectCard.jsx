@@ -4,33 +4,14 @@ import { formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
 import { useTheme } from "../context/ThemeContext"
 import { Link } from "react-router-dom"
-import { useState } from "react"
-import { doc, updateDoc, increment } from "firebase/firestore"
-import { db } from "../utils/firebase"
-import { useAuth } from "../context/AuthContext"
+import { useAccessibility } from "../context/AccessibilityContext"
 
 const ProjectCard = ({ project, onEdit, onDelete, showActions = true, showAuthor = false }) => {
   const { darkMode } = useTheme()
-  const { user } = useAuth()
-  const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(project.likes || 0)
+  const { getContrastTheme } = useAccessibility()
 
-  // Theme classes
-  const theme = {
-    card: darkMode ? "bg-gray-800" : "bg-white",
-    border: darkMode ? "border-gray-700" : "border-gray-200",
-    text: {
-      primary: darkMode ? "text-white" : "text-gray-900",
-      secondary: darkMode ? "text-gray-300" : "text-gray-500",
-      accent: darkMode ? "text-indigo-400" : "text-indigo-600",
-    },
-    button: {
-      edit: darkMode ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-800",
-      delete: darkMode ? "text-red-400 hover:text-red-300" : "text-red-600 hover:text-red-800",
-    },
-    badge: darkMode ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-700",
-    link: darkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700",
-  }
+  // Theme classes with contrast support
+  const theme = getContrastTheme(darkMode)
 
   // Format date
   const formatDate = (timestamp) => {
@@ -58,33 +39,20 @@ const ProjectCard = ({ project, onEdit, onDelete, showActions = true, showAuthor
           Privado
         </span>
       )
-    }
-    return null
-  }
-
-  // Handle like button click
-  const handleLike = async () => {
-    if (!user) return // Require login to like
-
-    try {
-      const projectRef = doc(db, "projects", project.id)
-
-      // Toggle like
-      if (!liked) {
-        await updateDoc(projectRef, {
-          likes: increment(1),
-        })
-        setLikeCount(likeCount + 1)
-      } else {
-        await updateDoc(projectRef, {
-          likes: increment(-1),
-        })
-        setLikeCount(likeCount - 1)
-      }
-
-      setLiked(!liked)
-    } catch (error) {
-      console.error("Error updating likes:", error)
+    } else {
+      return (
+        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          Público
+        </span>
+      )
     }
   }
 
@@ -120,17 +88,6 @@ const ProjectCard = ({ project, onEdit, onDelete, showActions = true, showAuthor
 
         {/* Description */}
         <p className={`text-sm ${theme.text.primary} line-clamp-3 mb-4`}>{project.description}</p>
-
-        {/* Category */}
-        {project.category && (
-          <div className="mb-3">
-            <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300`}
-            >
-              {project.category}
-            </span>
-          </div>
-        )}
 
         {/* Tags */}
         {project.tags && project.tags.length > 0 && (
@@ -207,40 +164,11 @@ const ProjectCard = ({ project, onEdit, onDelete, showActions = true, showAuthor
         </div>
 
         {/* Actions */}
-        <div className={`border-t ${theme.border} pt-4 flex justify-between items-center`}>
-          <div className="flex items-center">
-            <button
-              onClick={handleLike}
-              className={`flex items-center text-sm font-medium ${
-                liked
-                  ? "text-red-500 dark:text-red-400"
-                  : "text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-              } transition-colors`}
-              title={liked ? "Quitar me gusta" : "Me gusta"}
-            >
-              <svg
-                className={`w-5 h-5 mr-1 ${liked ? "fill-current" : "stroke-current fill-none"}`}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                />
-              </svg>
-              {likeCount}
-            </button>
-
-            <Link
-              to={`/project/${project.id}`}
-              className={`ml-4 text-sm font-medium ${theme.text.accent} hover:underline`}
-            >
+        {showActions && (
+          <div className={`border-t ${theme.border} pt-4 flex justify-between items-center`}>
+            <Link to={`/project/${project.id}`} className={`text-sm font-medium ${theme.text.accent} hover:underline`}>
               Ver detalles
             </Link>
-          </div>
-
-          {showActions && (
             <div className="flex space-x-4">
               <button onClick={() => onEdit(project)} className={`text-sm font-medium ${theme.button.edit}`}>
                 Editar
@@ -249,8 +177,8 @@ const ProjectCard = ({ project, onEdit, onDelete, showActions = true, showAuthor
                 Eliminar
               </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -2,9 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { useTheme } from "../context/ThemeContext"
+import { useAccessibility } from "../context/AccessibilityContext"
 
 const EditProfileModal = ({ isOpen, onClose, onSave, currentData }) => {
   const { darkMode } = useTheme()
+  const { getContrastTheme } = useAccessibility()
+
+  // Theme classes with contrast support
+  const theme = getContrastTheme(darkMode)
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -13,19 +18,6 @@ const EditProfileModal = ({ isOpen, onClose, onSave, currentData }) => {
     website: "",
   })
   const [errors, setErrors] = useState({})
-
-  // Theme classes
-  const theme = {
-    modal: darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900",
-    input: darkMode
-      ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-      : "bg-white border-gray-300 text-gray-900 placeholder-gray-400",
-    button: {
-      primary: "bg-indigo-600 hover:bg-indigo-700 text-white",
-      secondary: darkMode ? "bg-gray-700 hover:bg-gray-600 text-white" : "bg-white hover:bg-gray-50 text-gray-700",
-    },
-    overlay: darkMode ? "bg-black bg-opacity-75" : "bg-gray-500 bg-opacity-75",
-  }
 
   // Initialize form with current data
   useEffect(() => {

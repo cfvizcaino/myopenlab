@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "../context/AuthContext"
 import { useTheme } from "../context/ThemeContext"
-import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from "firebase/firestore"
+import { useAccessibility } from "../context/AccessibilityContext"
+import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore"
 import { db } from "../utils/firebase"
 import { formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
@@ -12,147 +13,204 @@ import { Link } from "react-router-dom"
 const ActivityTimeline = () => {
   const { user } = useAuth()
   const { darkMode } = useTheme()
+  const { getContrastTheme } = useAccessibility()
   const [activities, setActivities] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Theme classes
-  const theme = {
-    card: darkMode ? "bg-gray-800" : "bg-white",
-    border: darkMode ? "border-gray-700" : "border-gray-200",
-    text: {
-      primary: darkMode ? "text-white" : "text-gray-900",
-      secondary: darkMode ? "text-gray-300" : "text-gray-600",
-      muted: darkMode ? "text-gray-400" : "text-gray-500",
-    },
-    accent: darkMode ? "text-indigo-400" : "text-indigo-600",
+  // Theme classes - now contrast-aware
+  const theme = getContrastTheme(darkMode)
+
+  // Extend theme with timeline-specific properties
+  const extendedTheme = {
+    ...theme,
     timeline: darkMode ? "bg-gray-600" : "bg-gray-300",
   }
 
   useEffect(() => {
     const fetchActivities = async () => {
-      if (!user) return
+      if (!user) {
+        setLoading(false)
+        return
+      }
 
+      console.log("Fetching activities for user:", user.uid)
       setLoading(true)
+
       try {
         const activities = []
 
-        // Fetch user's recent projects (created activities)
-        const projectsQuery = query(
-          collection(db, "projects"),
-          where("userId", "==", user.uid),
-          orderBy("createdAt", "desc"),
-          limit(5),
-        )
-        const projectsSnapshot = await getDocs(projectsQuery)
+        // 1. Fetch user's recent projects (created activities)
+        try {
+          console.log("Fetching user projects...")
+          const projectsQuery = query(collection(db, "projects"), where("userId", "==", user.uid))
+          const projectsSnapshot = await getDocs(projectsQuery)
+          console.log("Found user projects:", projectsSnapshot.size)
 
-        projectsSnapshot.forEach((doc) => {
-          const project = doc.data()
-          activities.push({
-            id: `project-${doc.id}`,
-            type: "project_created",
-            timestamp: project.createdAt,
-            data: {
-              projectId: doc.id,
-              projectTitle: project.title,
-              visibility: project.visibility,
-            },
-          })
-        })
-
-        // Fetch recent comments on user's projects
-        if (projectsSnapshot.size > 0) {
-          const projectIds = []
-          projectsSnapshot.forEach((doc) => projectIds.push(doc.id))
-
-          const commentsQuery = query(
-            collection(db, "comments"),
-            where("projectId", "in", projectIds.slice(0, 10)), // Firestore limit
-            orderBy("createdAt", "desc"),
-            limit(10),
-          )
-          const commentsSnapshot = await getDocs(commentsQuery)
-
-          for (const commentDoc of commentsSnapshot.docs) {
-            const comment = commentDoc.data()
-
-            // Skip comments by the user themselves
-            if (comment.userId === user.uid) continue
-
-            // Fetch commenter info
-            let commenterName = "Usuario desconocido"
-            try {
-              const commenterDoc = await getDoc(doc(db, "users", comment.userId))
-              if (commenterDoc.exists()) {
-                const commenterData = commenterDoc.data()
-                commenterName = `${commenterData.firstName} ${commenterData.lastName}`
-              }
-            } catch (error) {
-              console.error("Error fetching commenter:", error)
-            }
-
-            // Fetch project info
-            let projectTitle = "Proyecto desconocido"
-            try {
-              const projectDoc = await getDoc(doc(db, "projects", comment.projectId))
-              if (projectDoc.exists()) {
-                projectTitle = projectDoc.data().title
-              }
-            } catch (error) {
-              console.error("Error fetching project:", error)
-            }
-
-            activities.push({
-              id: `comment-${commentDoc.id}`,
-              type: "comment_received",
-              timestamp: comment.createdAt,
-              data: {
-                projectId: comment.projectId,
-                projectTitle,
-                commenterName,
-                commentContent: comment.content,
-              },
-            })
-          }
-        }
-
-        // Fetch recent likes on user's projects
-        if (projectsSnapshot.size > 0) {
-          const projectsWithLikes = []
+          const userProjects = []
           projectsSnapshot.forEach((doc) => {
             const project = doc.data()
-            if (project.likes && project.likes.length > 0) {
-              // For each like, create an activity (simplified - we don't have like timestamps)
-              project.likes.forEach((likerId) => {
-                if (likerId !== user.uid) {
-                  // Skip self-likes
-                  projectsWithLikes.push({
-                    id: `like-${doc.id}-${likerId}`,
-                    type: "like_received",
-                    timestamp: project.updatedAt || project.createdAt, // Approximate timestamp
-                    data: {
-                      projectId: doc.id,
-                      projectTitle: project.title,
-                      likerId,
-                    },
-                  })
+            userProjects.push({
+              id: doc.id,
+              ...project,
+            })
+
+            // Add project creation activity
+            activities.push({
+              id: `project-${doc.id}`,
+              type: "project_created",
+              timestamp: project.createdAt,
+              data: {
+                projectId: doc.id,
+                projectTitle: project.title,
+                visibility: project.visibility,
+              },
+            })
+          })
+
+          // Sort projects by date and take only the 5 most recent
+          userProjects.sort((a, b) => {
+            const getTime = (timestamp) => {
+              if (!timestamp) return 0
+              if (timestamp.toDate) return timestamp.toDate().getTime()
+              if (timestamp.seconds) return timestamp.seconds * 1000
+              return new Date(timestamp).getTime()
+            }
+            return getTime(b.createdAt) - getTime(a.createdAt)
+          })
+
+          console.log("User projects sorted by date:", userProjects.length)
+        } catch (error) {
+          console.error("Error fetching projects for activity:", error)
+        }
+
+        // 2. Fetch recent comments on user's projects
+        try {
+          console.log("Fetching comments on user projects...")
+
+          // First get all user's project IDs
+          const userProjectsQuery = query(collection(db, "projects"), where("userId", "==", user.uid))
+          const userProjectsSnapshot = await getDocs(userProjectsQuery)
+          const projectIds = []
+          const projectTitles = {}
+
+          userProjectsSnapshot.forEach((doc) => {
+            projectIds.push(doc.id)
+            projectTitles[doc.id] = doc.data().title
+          })
+
+          console.log("User has projects:", projectIds.length)
+
+          if (projectIds.length > 0) {
+            // Get all comments and filter by project IDs (to avoid Firestore 'in' limit)
+            const allCommentsQuery = query(collection(db, "comments"))
+            const allCommentsSnapshot = await getDocs(allCommentsQuery)
+
+            console.log("Total comments in database:", allCommentsSnapshot.size)
+
+            const relevantComments = []
+            allCommentsSnapshot.forEach((commentDoc) => {
+              const comment = commentDoc.data()
+
+              // Only include comments on user's projects, but not by the user themselves
+              if (projectIds.includes(comment.projectId) && comment.userId !== user.uid) {
+                relevantComments.push({
+                  id: commentDoc.id,
+                  ...comment,
+                })
+              }
+            })
+
+            console.log("Relevant comments found:", relevantComments.length)
+
+            // Sort comments by date and take recent ones
+            relevantComments.sort((a, b) => {
+              const getTime = (timestamp) => {
+                if (!timestamp) return 0
+                if (timestamp.toDate) return timestamp.toDate().getTime()
+                if (timestamp.seconds) return timestamp.seconds * 1000
+                return new Date(timestamp).getTime()
+              }
+              return getTime(b.createdAt) - getTime(a.createdAt)
+            })
+
+            // Process recent comments and add to activities
+            for (const comment of relevantComments.slice(0, 10)) {
+              try {
+                // Fetch commenter info
+                let commenterName = "Usuario desconocido"
+                const commenterDoc = await getDoc(doc(db, "users", comment.userId))
+                if (commenterDoc.exists()) {
+                  const commenterData = commenterDoc.data()
+                  commenterName = `${commenterData.firstName || ""} ${commenterData.lastName || ""}`.trim()
+                  if (!commenterName) commenterName = commenterData.email || "Usuario desconocido"
                 }
+
+                activities.push({
+                  id: `comment-${comment.id}`,
+                  type: "comment_received",
+                  timestamp: comment.createdAt,
+                  data: {
+                    projectId: comment.projectId,
+                    projectTitle: projectTitles[comment.projectId] || "Proyecto desconocido",
+                    commenterName,
+                    commentContent: comment.content,
+                  },
+                })
+              } catch (error) {
+                console.error("Error processing comment:", error)
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching comments for activity:", error)
+        }
+
+        // 3. Fetch recent likes on user's projects
+        try {
+          console.log("Checking for likes on user projects...")
+
+          const userProjectsQuery = query(collection(db, "projects"), where("userId", "==", user.uid))
+          const userProjectsSnapshot = await getDocs(userProjectsQuery)
+
+          userProjectsSnapshot.forEach((doc) => {
+            const project = doc.data()
+            if (project.likes && Array.isArray(project.likes) && project.likes.length > 0) {
+              // Add a like activity for each like (simplified - in real app you'd track when likes were added)
+              activities.push({
+                id: `likes-${doc.id}`,
+                type: "likes_received",
+                timestamp: project.updatedAt || project.createdAt,
+                data: {
+                  projectId: doc.id,
+                  projectTitle: project.title,
+                  likeCount: project.likes.length,
+                },
               })
             }
           })
-
-          // Add recent likes (limit to avoid too many)
-          activities.push(...projectsWithLikes.slice(0, 5))
+        } catch (error) {
+          console.error("Error fetching likes for activity:", error)
         }
+
+        console.log("Total activities before sorting:", activities.length)
 
         // Sort all activities by timestamp (newest first)
         activities.sort((a, b) => {
-          const dateA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp)
-          const dateB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp)
-          return dateB - dateA
+          const getTimestamp = (timestamp) => {
+            if (!timestamp) return 0
+            if (timestamp.toDate) return timestamp.toDate().getTime()
+            if (timestamp.seconds) return timestamp.seconds * 1000
+            return new Date(timestamp).getTime()
+          }
+
+          return getTimestamp(b.timestamp) - getTimestamp(a.timestamp)
         })
 
-        // Limit to most recent 10 activities
-        setActivities(activities.slice(0, 10))
+        // Limit to most recent 15 activities
+        const finalActivities = activities.slice(0, 15)
+        console.log("Final activities:", finalActivities.length)
+
+        setActivities(finalActivities)
       } catch (error) {
         console.error("Error fetching activities:", error)
       } finally {
@@ -165,7 +223,16 @@ const ActivityTimeline = () => {
 
   const formatDate = (timestamp) => {
     if (!timestamp) return "Fecha desconocida"
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+
+    let date
+    if (timestamp.toDate) {
+      date = timestamp.toDate()
+    } else if (timestamp.seconds) {
+      date = new Date(timestamp.seconds * 1000)
+    } else {
+      date = new Date(timestamp)
+    }
+
     return formatDistanceToNow(date, {
       addSuffix: true,
       locale: es,
@@ -205,7 +272,7 @@ const ActivityTimeline = () => {
             </svg>
           </div>
         )
-      case "like_received":
+      case "likes_received":
         return (
           <div className="flex items-center justify-center w-8 h-8 bg-red-100 dark:bg-red-900 rounded-full">
             <svg className="w-4 h-4 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 24 24">
@@ -268,17 +335,18 @@ const ActivityTimeline = () => {
             <p className={`text-xs ${theme.text.secondary} mt-1 line-clamp-2`}>"{activity.data.commentContent}"</p>
           </div>
         )
-      case "like_received":
+      case "likes_received":
         return (
           <div>
             <p className={`text-sm ${theme.text.primary}`}>
-              Alguien le dio me gusta a{" "}
+              Tu proyecto{" "}
               <Link
                 to={`/project/${activity.data.projectId}`}
                 className={`font-medium ${theme.accent} hover:underline`}
               >
                 {activity.data.projectTitle}
-              </Link>
+              </Link>{" "}
+              tiene {activity.data.likeCount} me gusta
             </p>
           </div>
         )
@@ -331,7 +399,7 @@ const ActivityTimeline = () => {
                   <div className="relative pb-8">
                     {index !== activities.length - 1 && (
                       <span
-                        className={`absolute top-4 left-4 -ml-px h-full w-0.5 ${theme.timeline}`}
+                        className={`absolute top-4 left-4 -ml-px h-full w-0.5 ${extendedTheme.timeline}`}
                         aria-hidden="true"
                       />
                     )}

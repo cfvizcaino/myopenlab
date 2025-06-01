@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "../context/AuthContext"
 import { useTheme } from "../context/ThemeContext"
-import { doc, updateDoc, getDoc } from "firebase/firestore"
+import { useAccessibility } from "../context/AccessibilityContext"
+import { doc, updateDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore"
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage"
 import { db, storage } from "../utils/firebase"
 import Header from "../components/Header"
@@ -13,6 +14,7 @@ import ProjectCard from "../components/ProjectCard"
 const UserProfile = () => {
   const { user, userData, refreshUserData } = useAuth()
   const { darkMode } = useTheme()
+  const { getContrastTheme } = useAccessibility()
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [favoriteProjects, setFavoriteProjects] = useState([])
@@ -28,15 +30,21 @@ const UserProfile = () => {
     joinDate: null,
     favoriteProjects: [],
   })
+  const [userStats, setUserStats] = useState({
+    totalProjects: 0,
+    publicProjects: 0,
+    privateProjects: 0,
+    totalLikes: 0,
+    totalComments: 0,
+  })
+  const [loadingStats, setLoadingStats] = useState(true)
 
-  // Theme classes
-  const theme = {
-    bg: darkMode ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-800",
-    card: darkMode ? "bg-gray-800" : "bg-white",
-    highlight: darkMode ? "text-white" : "text-gray-900",
-    muted: darkMode ? "text-gray-400" : "text-gray-500",
-    accent: darkMode ? "text-indigo-400" : "text-indigo-600",
-    border: darkMode ? "border-gray-700" : "border-gray-200",
+  // Theme classes - now contrast-aware
+  const theme = getContrastTheme(darkMode)
+
+  // Extend theme with profile-specific properties
+  const extendedTheme = {
+    ...theme,
     tab: {
       active: darkMode ? "bg-gray-700 text-white" : "bg-white text-gray-900",
       inactive: darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-700",
@@ -72,6 +80,73 @@ const UserProfile = () => {
 
     fetchProfileData()
   }, [user, userData])
+
+  // Fetch user statistics
+  useEffect(() => {
+    const fetchUserStats = async () => {
+      if (!user) return
+
+      setLoadingStats(true)
+      try {
+        // Fetch user's projects
+        const projectsQuery = query(collection(db, "projects"), where("userId", "==", user.uid))
+        const projectsSnapshot = await getDocs(projectsQuery)
+
+        let totalProjects = 0
+        let publicProjects = 0
+        let privateProjects = 0
+        let totalLikes = 0
+        const projectIds = []
+
+        projectsSnapshot.forEach((doc) => {
+          const project = doc.data()
+          totalProjects++
+          projectIds.push(doc.id)
+
+          if (project.visibility === "public") {
+            publicProjects++
+          } else {
+            privateProjects++
+          }
+
+          // Count likes
+          if (project.likes && Array.isArray(project.likes)) {
+            totalLikes += project.likes.length
+          }
+        })
+
+        // Fetch comments on user's projects
+        let totalComments = 0
+        if (projectIds.length > 0) {
+          // Split into chunks of 10 for Firestore 'in' query limit
+          const chunks = []
+          for (let i = 0; i < projectIds.length; i += 10) {
+            chunks.push(projectIds.slice(i, i + 10))
+          }
+
+          for (const chunk of chunks) {
+            const commentsQuery = query(collection(db, "comments"), where("projectId", "in", chunk))
+            const commentsSnapshot = await getDocs(commentsQuery)
+            totalComments += commentsSnapshot.size
+          }
+        }
+
+        setUserStats({
+          totalProjects,
+          publicProjects,
+          privateProjects,
+          totalLikes,
+          totalComments,
+        })
+      } catch (error) {
+        console.error("Error fetching user stats:", error)
+      } finally {
+        setLoadingStats(false)
+      }
+    }
+
+    fetchUserStats()
+  }, [user])
 
   // Fetch favorite projects
   useEffect(() => {
@@ -123,28 +198,55 @@ const UserProfile = () => {
   const handleProfilePictureUpload = async (file) => {
     if (!file || !user) return
 
+    console.log("Starting profile picture upload:", file.name, file.size)
     setLoading(true)
+
     try {
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("El archivo es demasiado grande. Máximo 5MB.")
+      }
+
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        throw new Error("Por favor selecciona un archivo de imagen válido.")
+      }
+
+      console.log("File validation passed")
+
+      // Create unique filename with timestamp
+      const timestamp = Date.now()
+      const fileExtension = file.name.split(".").pop()
+      const fileName = `profile_${user.uid}_${timestamp}.${fileExtension}`
+
+      console.log("Uploading to:", `profile-pictures/${fileName}`)
+
+      // Upload new profile picture
+      const imageRef = ref(storage, `profile-pictures/${fileName}`)
+      const uploadResult = await uploadBytes(imageRef, file)
+      console.log("Upload successful:", uploadResult)
+
+      const downloadURL = await getDownloadURL(imageRef)
+      console.log("Download URL:", downloadURL)
+
       // Delete old profile picture if exists
       if (profileData.profilePicture) {
         try {
-          const oldImageRef = ref(storage, `profile-pictures/${user.uid}`)
+          // Extract filename from old URL to delete it
+          const oldImageRef = ref(storage, profileData.profilePicture)
           await deleteObject(oldImageRef)
+          console.log("Old image deleted")
         } catch (error) {
-          console.log("No previous image to delete")
+          console.log("Could not delete old image (might not exist):", error)
         }
       }
-
-      // Upload new profile picture
-      const imageRef = ref(storage, `profile-pictures/${user.uid}`)
-      await uploadBytes(imageRef, file)
-      const downloadURL = await getDownloadURL(imageRef)
 
       // Update user document
       const userDocRef = doc(db, "users", user.uid)
       await updateDoc(userDocRef, {
         profilePicture: downloadURL,
       })
+      console.log("User document updated")
 
       setProfileData((prev) => ({
         ...prev,
@@ -155,8 +257,11 @@ const UserProfile = () => {
       if (refreshUserData) {
         refreshUserData()
       }
+
+      console.log("Profile picture upload completed successfully")
     } catch (error) {
       console.error("Error uploading profile picture:", error)
+      alert(`Error al subir la imagen: ${error.message}`)
     } finally {
       setLoading(false)
     }
@@ -183,6 +288,7 @@ const UserProfile = () => {
       setIsEditModalOpen(false)
     } catch (error) {
       console.error("Error updating profile:", error)
+      alert("Error al actualizar el perfil. Por favor, intenta nuevamente.")
     }
   }
 
@@ -213,6 +319,10 @@ const UserProfile = () => {
                       src={profileData.profilePicture || "/placeholder.svg"}
                       alt="Profile"
                       className="h-full w-full object-cover"
+                      onError={(e) => {
+                        console.error("Error loading profile image:", e)
+                        e.target.style.display = "none"
+                      }}
                     />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center">
@@ -250,6 +360,7 @@ const UserProfile = () => {
                     onChange={(e) => {
                       const file = e.target.files?.[0]
                       if (file) {
+                        console.log("File selected:", file)
                         handleProfilePictureUpload(file)
                       }
                     }}
@@ -327,7 +438,7 @@ const UserProfile = () => {
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === "about"
                     ? `border-indigo-500 ${theme.accent}`
-                    : `border-transparent ${theme.tab.inactive}`
+                    : `border-transparent ${extendedTheme.tab.inactive}`
                 }`}
               >
                 Acerca de
@@ -337,7 +448,7 @@ const UserProfile = () => {
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === "favorites"
                     ? `border-indigo-500 ${theme.accent}`
-                    : `border-transparent ${theme.tab.inactive}`
+                    : `border-transparent ${extendedTheme.tab.inactive}`
                 }`}
               >
                 Favoritos ({profileData.favoriteProjects.length})
@@ -465,15 +576,28 @@ const UserProfile = () => {
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div className={`${theme.card} shadow rounded-lg px-4 py-5 sm:p-6`}>
             <dt className={`text-sm font-medium ${theme.muted} truncate`}>Proyectos Creados</dt>
-            <dd className={`mt-1 text-3xl font-semibold ${theme.highlight}`}>0</dd>
+            <dd className={`mt-1 text-3xl font-semibold ${theme.highlight}`}>
+              {loadingStats ? (
+                <div className="animate-pulse bg-gray-300 h-8 w-12 rounded"></div>
+              ) : (
+                userStats.totalProjects
+              )}
+            </dd>
+            {!loadingStats && (
+              <div className={`text-xs ${theme.muted} mt-1`}>
+                {userStats.publicProjects} públicos, {userStats.privateProjects} privados
+              </div>
+            )}
           </div>
           <div className={`${theme.card} shadow rounded-lg px-4 py-5 sm:p-6`}>
             <dt className={`text-sm font-medium ${theme.muted} truncate`}>Proyectos Favoritos</dt>
             <dd className={`mt-1 text-3xl font-semibold ${theme.highlight}`}>{profileData.favoriteProjects.length}</dd>
           </div>
           <div className={`${theme.card} shadow rounded-lg px-4 py-5 sm:p-6`}>
-            <dt className={`text-sm font-medium ${theme.muted} truncate`}>Contribuciones</dt>
-            <dd className={`mt-1 text-3xl font-semibold ${theme.highlight}`}>0</dd>
+            <dt className={`text-sm font-medium ${theme.muted} truncate`}>Me Gusta Recibidos</dt>
+            <dd className={`mt-1 text-3xl font-semibold ${theme.highlight}`}>
+              {loadingStats ? <div className="animate-pulse bg-gray-300 h-8 w-12 rounded"></div> : userStats.totalLikes}
+            </dd>
           </div>
         </div>
       </div>

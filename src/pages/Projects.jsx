@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { useTheme } from "../context/ThemeContext"
+import { useAccessibility } from "../context/AccessibilityContext"
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore"
 import { db } from "../utils/firebase"
 import { ref, deleteObject } from "firebase/storage"
@@ -16,6 +17,8 @@ import DeleteConfirmationModal from "../components/DeleteConfirmationModal"
 const Projects = () => {
   const { user } = useAuth()
   const { darkMode, toggleDarkMode } = useTheme()
+  const { getContrastTheme } = useAccessibility()
+  const theme = getContrastTheme(darkMode)
   const navigate = useNavigate()
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
@@ -25,16 +28,6 @@ const Projects = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [projectToDelete, setProjectToDelete] = useState(null)
   const [filter, setFilter] = useState("all") // all, public, private
-
-  // Theme classes
-  const theme = {
-    bg: darkMode ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-800",
-    card: darkMode ? "bg-gray-800" : "bg-white",
-    highlight: darkMode ? "text-white" : "text-gray-900",
-    muted: darkMode ? "text-gray-400" : "text-gray-500",
-    accent: darkMode ? "text-indigo-400" : "text-indigo-600",
-    select: darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900",
-  }
 
   // Fetch user's projects
   const fetchProjects = async () => {
