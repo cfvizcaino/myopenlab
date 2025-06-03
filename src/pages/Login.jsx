@@ -1,11 +1,10 @@
-
 "use client"
 
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useTheme } from "../context/ThemeContext"
 import { useAccessibility } from "../context/AccessibilityContext"
-import { loginUser, resetPassword } from "../utils/authService"
+import { loginUser, resetPassword } from "../utils/authservice"
 import AccessibilityControls from "../components/AccessibilityControls"
 
 const Login = () => {
