@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="labGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f093fb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f5576c;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Fondo redondeado -->
+  <rect x="2" y="2" width="28" height="28" rx="6" ry="6" fill="url(#bgGradient)" />
+  
+  <!-- Contenedor principal del laboratorio -->
+  <rect x="6" y="8" width="20" height="16" rx="2" ry="2" fill="white" opacity="0.9" />
+  
+  <!-- Elementos del laboratorio/proyectos -->
+  <!-- Frasco principal (representa proyectos) -->
+  <rect x="8" y="12" width="4" height="6" rx="1" ry="1" fill="url(#labGradient)" />
+  <rect x="8.5" y="11" width="3" height="1" rx="0.5" ry="0.5" fill="#764ba2" />
+  
+  <!-- Tubos de ensayo (proyectos múltiples) -->
+  <rect x="14" y="14" width="2" height="4" rx="1" ry="1" fill="#4facfe" />
+  <rect x="17" y="13" width="2" height="5" rx="1" ry="1" fill="#00f2fe" />
+  
+  <!-- Conexiones/red (compartición) -->
+  <circle cx="21" cy="12" r="1.5" fill="#764ba2" opacity="0.7" />
+  <circle cx="24" cy="15" r="1" fill="#667eea" opacity="0.7" />
+  <line x1="21" y1="12" x2="24" y2="15" stroke="#764ba2" stroke-width="1" opacity="0.5" />
+  
+  <!-- Indicador de "abierto/open" -->
+  <circle cx="26" cy="10" r="2" fill="none" stroke="white" stroke-width="1.5" opacity="0.8" />
+  <path d="M25 10 L26 11 L27.5 9" stroke="white" stroke-width="1.5" fill="none" opacity="0.8" />
+</svg>
