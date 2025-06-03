@@ -1,0 +1,292 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  transition: font-size 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+}
+
+/* High contrast mode styles - More comprehensive */
+html.contrast-mode,
+html.contrast-mode body,
+.contrast-mode,
+.contrast-mode * {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Preserve images and specific elements */
+.contrast-mode img,
+.contrast-mode video,
+.contrast-mode canvas,
+.contrast-mode svg {
+  filter: contrast(1.2) brightness(1.1) !important;
+}
+
+/* All borders white in contrast mode */
+.contrast-mode *,
+.contrast-mode *::before,
+.contrast-mode *::after {
+  border-color: #ffffff !important;
+}
+
+/* Links and interactive elements */
+.contrast-mode a,
+.contrast-mode button[type="button"],
+.contrast-mode .text-indigo-600,
+.contrast-mode .text-indigo-400,
+.contrast-mode .text-blue-600,
+.contrast-mode .text-blue-400,
+.contrast-mode .hover\:text-indigo-700:hover,
+.contrast-mode .hover\:text-blue-700:hover {
+  color: #ffff00 !important;
+}
+
+/* Form elements */
+.contrast-mode input,
+.contrast-mode textarea,
+.contrast-mode select,
+.contrast-mode option {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+.contrast-mode input::placeholder,
+.contrast-mode textarea::placeholder {
+  color: #cccccc !important;
+}
+
+/* Buttons */
+.contrast-mode button {
+  border: 2px solid #ffffff !important;
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.contrast-mode button:hover {
+  background-color: #333333 !important;
+}
+
+/* Primary buttons */
+.contrast-mode .bg-indigo-600,
+.contrast-mode .bg-indigo-700,
+.contrast-mode .bg-blue-600,
+.contrast-mode .bg-blue-700,
+.contrast-mode button[class*="bg-indigo"],
+.contrast-mode button[class*="bg-blue"] {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+.contrast-mode .bg-indigo-600:hover,
+.contrast-mode .bg-indigo-700:hover {
+  background-color: #cccccc !important;
+  color: #000000 !important;
+}
+
+/* Cards and containers */
+.contrast-mode .bg-white,
+.contrast-mode .bg-gray-50,
+.contrast-mode .bg-gray-100,
+.contrast-mode .bg-gray-200,
+.contrast-mode .bg-gray-300,
+.contrast-mode .bg-gray-700,
+.contrast-mode .bg-gray-800,
+.contrast-mode .bg-gray-900 {
+  background-color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+/* Text colors */
+.contrast-mode .text-gray-500,
+.contrast-mode .text-gray-600,
+.contrast-mode .text-gray-700,
+.contrast-mode .text-gray-400,
+.contrast-mode .text-gray-300,
+.contrast-mode .text-gray-900 {
+  color: #ffffff !important;
+}
+
+/* Focus styles */
+.contrast-mode *:focus,
+.contrast-mode *:focus-visible {
+  outline: 3px solid #ffff00 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 3px #ffff00 !important;
+}
+
+/* Shadows */
+.contrast-mode .shadow,
+.contrast-mode .shadow-sm,
+.contrast-mode .shadow-md,
+.contrast-mode .shadow-lg,
+.contrast-mode .shadow-xl {
+  box-shadow: 0 0 0 2px #ffffff !important;
+}
+
+/* Loading spinners */
+.contrast-mode .animate-spin {
+  border-color: #ffffff !important;
+  border-top-color: transparent !important;
+}
+
+/* Dropdown menus and modals */
+.contrast-mode .absolute,
+.contrast-mode .fixed {
+  background-color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+/* Profile picture containers */
+.contrast-mode .rounded-full {
+  border: 2px solid #ffffff !important;
+}
+
+/* Ensure proper z-index for contrast mode elements */
+.contrast-mode .z-50 {
+  z-index: 9999 !important;
+}
+
+/* Special handling for navigation */
+.contrast-mode nav {
+  background-color: #000000 !important;
+  border-bottom: 2px solid #ffffff !important;
+}
+
+/* Ensure all text is visible */
+.contrast-mode h1,
+.contrast-mode h2,
+.contrast-mode h3,
+.contrast-mode h4,
+.contrast-mode h5,
+.contrast-mode h6,
+.contrast-mode p,
+.contrast-mode span,
+.contrast-mode div,
+.contrast-mode label {
+  color: #ffffff !important;
+}
+
+/* Icons */
+.contrast-mode svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+.contrast-mode a svg,
+.contrast-mode button svg {
+  color: #ffff00 !important;
+  fill: #ffff00 !important;
+}
+
+/* Font size utilities */
+.text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+.text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+.text-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+.text-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+.text-xl {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+.text-2xl {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+.text-3xl {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+}
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* Smooth transitions */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Focus indicators for better accessibility */
+button:focus,
+input:focus,
+textarea:focus,
+select:focus,
+a:focus {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+.contrast-mode button:focus,
+.contrast-mode input:focus,
+.contrast-mode textarea:focus,
+.contrast-mode select:focus,
+.contrast-mode a:focus {
+  outline: 3px solid #ffff00 !important;
+  outline-offset: 2px !important;
+}
+
+/* Skip to content link for screen readers */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: #000;
+  color: #fff;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 1000;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* High contrast mode toggle animation */
+.contrast-toggle {
+  transition: all 0.3s ease;
+}
+
+/* Ensure proper contrast ratios */
+.contrast-mode .shadow {
+  box-shadow: 0 0 0 2px #ffffff !important;
+}
+
+.contrast-mode .shadow-lg {
+  box-shadow: 0 0 0 3px #ffffff !important;
+}
+
+/* Loading spinner in contrast mode */
+.contrast-mode .animate-spin {
+  border-color: #ffffff !important;
+  border-top-color: transparent !important;
+}

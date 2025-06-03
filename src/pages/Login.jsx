@@ -1,206 +1,377 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { loginUser, resetPassword } from '../utils/authservice';
-import { FirebaseError } from 'firebase/app';
-import { useTheme } from '../context/ThemeContext'; // Importa el ThemeContext
+
+"use client"
+
+import { useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { useTheme } from "../context/ThemeContext"
+import { useAccessibility } from "../context/AccessibilityContext"
+import { loginUser, resetPassword } from "../utils/authService"
+import AccessibilityControls from "../components/AccessibilityControls"
 
 const Login = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [resetSent, setResetSent] = useState(false);
-    const navigate = useNavigate();
+  const { darkMode, toggleDarkMode } = useTheme()
+  const { getContrastTheme } = useAccessibility()
 
-    // Usa el estado global de ThemeContext
-    const { darkMode, toggleDarkMode } = useTheme();
+  // Theme classes with contrast support
+  const theme = getContrastTheme(darkMode)
+  const navigate = useNavigate()
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  })
+  const [errors, setErrors] = useState({})
+  const [loading, setLoading] = useState(false)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [resetEmail, setResetEmail] = useState("")
+  const [resetLoading, setResetLoading] = useState(false)
+  const [resetMessage, setResetMessage] = useState("")
 
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        setError('');
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }))
+    }
+  }
 
-        try {
-            const user = await loginUser(email, password);
-            console.log('Usuario autenticado:', user);
-            navigate('/dashboard');
-        } catch (err) {
-            if (err instanceof FirebaseError) {
-                switch (err.code) {
-                    case 'auth/user-not-found':
-                        setError('No existe una cuenta con este correo electrónico');
-                        break;
-                    case 'auth/wrong-password':
-                        setError('Contraseña incorrecta');
-                        break;
-                    case 'auth/invalid-email':
-                        setError('Correo electrónico inválido');
-                        break;
-                    default:
-                        setError('Error al iniciar sesión. Por favor, intente nuevamente');
-                }
-            } else {
-                setError('Error al iniciar sesión. Por favor, intente nuevamente');
-            }
-        }
-    };
+  const validateForm = () => {
+    const newErrors = {}
 
-    const handleResetPassword = async (e) => {
-        e.preventDefault();
-        setError('');
+    if (!formData.email) {
+      newErrors.email = "El correo electrónico es obligatorio"
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "El correo electrónico no es válido"
+    }
 
-        try {
-            await resetPassword(email);
-            setResetSent(true);
-        } catch (err) {
-            if (err instanceof FirebaseError) {
-                switch (err.code) {
-                    case 'auth/user-not-found':
-                        setError('No existe una cuenta con este correo electrónico');
-                        break;
-                    case 'auth/invalid-email':
-                        setError('Correo electrónico inválido');
-                        break;
-                    default:
-                        setError('Error al enviar el email de recuperación');
-                }
-            } else {
-                setError('Error al enviar el email de recuperación');
-            }
-        }
-    };
+    if (!formData.password) {
+      newErrors.password = "La contraseña es obligatoria"
+    }
 
-    return (
-        <div className={`min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 transition-colors duration-300 ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 to-indigo-100'}`}>
-            {/* Toggle para cambiar entre modo claro y oscuro */}
-            <div className="absolute top-4 right-4">
-                <button
-                    onClick={toggleDarkMode}
-                    className={`p-2 rounded-full ${darkMode ? 'bg-gray-800 text-yellow-400' : 'bg-indigo-100 text-gray-700'}`}
-                    aria-label="Cambiar tema"
-                >
-                    {darkMode ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                    ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                        </svg>
-                    )}
-                </button>
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    if (!validateForm()) return
+
+    setLoading(true)
+    try {
+      await loginUser(formData.email, formData.password)
+      navigate("/dashboard")
+    } catch (error) {
+      console.error("Error al iniciar sesión:", error)
+
+      // Handle specific Firebase auth errors
+      let errorMessage = "Error al iniciar sesión. Por favor, intenta nuevamente."
+
+      switch (error.code) {
+        case "auth/user-not-found":
+          errorMessage = "No existe una cuenta con este correo electrónico."
+          break
+        case "auth/wrong-password":
+          errorMessage = "Contraseña incorrecta."
+          break
+        case "auth/invalid-email":
+          errorMessage = "El correo electrónico no es válido."
+          break
+        case "auth/user-disabled":
+          errorMessage = "Esta cuenta ha sido deshabilitada."
+          break
+        case "auth/too-many-requests":
+          errorMessage = "Demasiados intentos fallidos. Intenta más tarde."
+          break
+        case "auth/invalid-credential":
+          errorMessage = "Credenciales inválidas. Verifica tu correo y contraseña."
+          break
+        default:
+          errorMessage = error.message || errorMessage
+      }
+
+      setErrors({ general: errorMessage })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault()
+
+    if (!resetEmail) {
+      setErrors({ resetEmail: "El correo electrónico es obligatorio" })
+      return
+    }
+
+    if (!/\S+@\S+\.\S+/.test(resetEmail)) {
+      setErrors({ resetEmail: "El correo electrónico no es válido" })
+      return
+    }
+
+    setResetLoading(true)
+    setErrors({})
+
+    try {
+      await resetPassword(resetEmail)
+      setResetMessage(
+        "Se ha enviado un correo de recuperación a tu dirección de email. Revisa tu bandeja de entrada y spam.",
+      )
+      setResetEmail("")
+    } catch (error) {
+      console.error("Error al enviar correo de recuperación:", error)
+
+      let errorMessage = "Error al enviar el correo de recuperación."
+
+      switch (error.code) {
+        case "auth/user-not-found":
+          errorMessage = "No existe una cuenta con este correo electrónico."
+          break
+        case "auth/invalid-email":
+          errorMessage = "El correo electrónico no es válido."
+          break
+        case "auth/too-many-requests":
+          errorMessage = "Demasiados intentos. Intenta más tarde."
+          break
+        default:
+          errorMessage = error.message || errorMessage
+      }
+
+      setErrors({ resetEmail: errorMessage })
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
+  const renderMoonIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+      />
+    </svg>
+  )
+
+  const renderSunIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+      />
+    </svg>
+  )
+
+  return (
+    <div className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ${theme.bg}`}>
+      <div className="max-w-md w-full space-y-8">
+        {/* Header */}
+        <div className="text-center">
+          <div className="flex justify-between items-center mb-6">
+            <Link to="/" className={`text-2xl font-bold ${theme.accent}`}>
+              MyOpenLab
+            </Link>
+            <div className="flex items-center space-x-2">
+              {/* Accessibility Controls */}
+              <AccessibilityControls />
+
+              <button
+                onClick={toggleDarkMode}
+                className={`p-2 rounded-full ${darkMode ? "bg-gray-700 text-yellow-400" : "bg-gray-100 text-gray-700"}`}
+                aria-label="Cambiar tema"
+              >
+                {darkMode ? renderSunIcon() : renderMoonIcon()}
+              </button>
             </div>
-
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <h2 className={`mt-6 text-center text-3xl font-extrabold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                    Bienvenido
-                </h2>
-                <p className={`mt-2 text-center text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                    Ingresa a tu cuenta
-                </p>
-            </div>
-
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className={`py-8 px-4 shadow sm:rounded-lg sm:px-10 transition-colors ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                    <form className="space-y-6" onSubmit={handleLogin}>
-                        <div>
-                            <label htmlFor="email" className={`block text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                                Correo electrónico
-                            </label>
-                            <div className="mt-1">
-                                <input
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    autoComplete="email"
-                                    required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors ${
-                                        darkMode 
-                                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-offset-gray-800' 
-                                            : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400'
-                                    }`}
-                                    placeholder="ejemplo@correo.com"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label htmlFor="password" className={`block text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                                Contraseña
-                            </label>
-                            <div className="mt-1">
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    autoComplete="current-password"
-                                    required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors ${
-                                        darkMode 
-                                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-offset-gray-800' 
-                                            : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400'
-                                    }`}
-                                    placeholder="••••••••"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="text-center justify-end">
-                            <div className="text-sm">
-                                {resetSent ? (
-                                    <a href="#" className={`font-medium hover:underline ${darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-500'}`}>
-                                        Se ha enviado un correo de recuperación a tu email
-                                    </a>
-                                ) : (
-                                    <a href="#" className={`text-center font-medium hover:underline ${darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-500'}`} onClick={handleResetPassword}>
-                                        ¿Olvidaste tu contraseña?
-                                    </a>
-                                )}
-                            </div>
-                        </div>
-
-                        <div>
-                            <button
-                                type="submit"
-                                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors ${
-                                    darkMode ? 'focus:ring-offset-gray-800' : ''
-                                }`}
-                            >
-                                Iniciar Sesión
-                            </button>
-                        </div>
-                    </form>
-
-                    {error && (
-                        <div className="mt-4 p-3 rounded bg-red-100 border border-red-200 text-red-700 dark:bg-red-900/30 dark:border-red-800 dark:text-red-400">
-                            <p className="text-sm">{error}</p>
-                        </div>
-                    )}
-
-                    <div className="mt-6">
-                        <p className={`text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            ¿No tienes una cuenta?{' '}
-                            <Link to="/register" className={`font-medium hover:underline ${darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-500'}`}>
-                                Regístrate aquí
-                            </Link>
-                        </p>
-                    </div>
-
-                    {/* Botón para ir al Catalog */}
-                    <div className="mt-6">
-                        <p className={`text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            Revisar tableros de la comunidad:{' '}
-                            <Link to="/catalog" className={`font-medium hover:underline ${darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-500'}`}>
-                                clic aquí
-                            </Link>
-                        </p>
-                    </div>
-                </div>
-            </div>
+          </div>
+          <h2 className={`text-3xl font-extrabold ${theme.text.primary}`}>
+            {showForgotPassword ? "Recuperar Contraseña" : "Inicia sesión en tu cuenta"}
+          </h2>
+          {!showForgotPassword && (
+            <p className={`mt-2 text-sm ${theme.text.muted}`}>
+              ¿No tienes una cuenta?{" "}
+              <Link to="/register" className={`font-medium ${theme.accent} hover:underline`}>
+                Regístrate aquí
+              </Link>
+            </p>
+          )}
         </div>
-    );
-};
 
-export default Login;
+        {/* Form */}
+        <div className={`${theme.card} shadow rounded-lg p-8`}>
+          {!showForgotPassword ? (
+            // Login Form
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              {errors.general && (
+                <div className="rounded-md bg-red-50 dark:bg-red-900/30 p-4">
+                  <div className="text-sm text-red-700 dark:text-red-400">{errors.general}</div>
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="email" className={`block text-sm font-medium ${theme.text.secondary}`}>
+                  Correo electrónico
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full rounded-md shadow-sm px-3 py-2 border ${theme.input} ${
+                    errors.email ? "border-red-500" : ""
+                  }`}
+                  placeholder="tu@email.com"
+                />
+                {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
+              </div>
+
+              <div>
+                <label htmlFor="password" className={`block text-sm font-medium ${theme.text.secondary}`}>
+                  Contraseña
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full rounded-md shadow-sm px-3 py-2 border ${theme.input} ${
+                    errors.password ? "border-red-500" : ""
+                  }`}
+                  placeholder="Tu contraseña"
+                />
+                {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className={`font-medium ${theme.accent} hover:underline`}
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium ${theme.button.primary} disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {loading ? (
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                  ) : null}
+                  {loading ? "Iniciando sesión..." : "Iniciar sesión"}
+                </button>
+              </div>
+            </form>
+          ) : (
+            // Forgot Password Form
+            <form className="space-y-6" onSubmit={handleForgotPassword}>
+              <div className="text-center">
+                <p className={`text-sm ${theme.text.secondary}`}>
+                  Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
+                </p>
+              </div>
+
+              {resetMessage && (
+                <div className="rounded-md bg-green-50 dark:bg-green-900/30 p-4">
+                  <div className="text-sm text-green-700 dark:text-green-400">{resetMessage}</div>
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="resetEmail" className={`block text-sm font-medium ${theme.text.secondary}`}>
+                  Correo electrónico
+                </label>
+                <input
+                  id="resetEmail"
+                  name="resetEmail"
+                  type="email"
+                  autoComplete="email"
+                  value={resetEmail}
+                  onChange={(e) => {
+                    setResetEmail(e.target.value)
+                    if (errors.resetEmail) {
+                      setErrors({})
+                    }
+                  }}
+                  className={`mt-1 block w-full rounded-md shadow-sm px-3 py-2 border ${theme.input} ${
+                    errors.resetEmail ? "border-red-500" : ""
+                  }`}
+                  placeholder="tu@email.com"
+                />
+                {errors.resetEmail && <p className="mt-1 text-sm text-red-500">{errors.resetEmail}</p>}
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(false)
+                    setResetEmail("")
+                    setResetMessage("")
+                    setErrors({})
+                  }}
+                  className={`flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium ${theme.button.secondary}`}
+                >
+                  Volver
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetLoading}
+                  className={`flex-1 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium ${theme.button.primary} disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {resetLoading ? (
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                  ) : null}
+                  {resetLoading ? "Enviando..." : "Enviar correo"}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="text-center">
+          <p className={`text-sm ${theme.text.muted}`}>
+            <Link to="/" className={`${theme.accent} hover:underline`}>
+              ← Volver al inicio
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default Login
