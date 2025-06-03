@@ -8,6 +8,8 @@ import Header from "../components/Header"
 import { formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
 import { useAccessibility } from "../context/AccessibilityContext"
+import { followUser, unfollowUser, isFollowing } from '../utils/followService'
+import { auth } from '../utils/firebase'
 
 const Catalog = () => {
   const [projects, setProjects] = useState([])
@@ -19,6 +21,9 @@ const Catalog = () => {
   const [allCategories, setAllCategories] = useState([])
   const { darkMode } = useTheme()
   const [error, setError] = useState(null)
+  const [isFollowingAuthor, setIsFollowingAuthor] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState(null)
+  const [selectedProject, setSelectedProject] = useState(null)
 
   // Theme classes
   const { getContrastTheme } = useAccessibility()
@@ -106,6 +111,34 @@ const Catalog = () => {
 
     fetchProjects()
   }, [])
+
+  useEffect(() => {
+    const fetchCurrentUserId = async () => {
+      const user = auth.currentUser;
+      setCurrentUserId(user.uid);
+    };
+    fetchCurrentUserId();
+  }, []);
+
+  useEffect(() => {
+    const checkFollowStatus = async () => {
+      if (currentUserId && selectedProject?.userId) {
+        const following = await isFollowing(currentUserId, selectedProject.userId);
+        setIsFollowingAuthor(following);
+      }
+    };
+    checkFollowStatus();
+  }, [currentUserId, selectedProject]);
+
+  const handleFollowToggle = async () => {
+    if (!currentUserId || !selectedProject?.userId) return;
+    if (isFollowingAuthor) {
+      await unfollowUser(currentUserId, selectedProject.userId);
+    } else {
+      await followUser(currentUserId, selectedProject.userId);
+    }
+    setIsFollowingAuthor(!isFollowingAuthor);
+  };
 
   // Filter and sort projects (only public ones)
   useEffect(() => {
@@ -531,6 +564,20 @@ const Catalog = () => {
             </div>
           )}
         </div>
+
+        {selectedProject && (
+          <div className="mt-6">
+            <h3 className={`text-lg font-medium ${theme.highlight} mb-4`}>Detalles del Proyecto</h3>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={`text-sm ${theme.muted}`}>Autor: {selectedProject.authorName}</p>
+              </div>
+              <button onClick={handleFollowToggle}>
+                {isFollowingAuthor ? 'Dejar de seguir' : 'Seguir'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

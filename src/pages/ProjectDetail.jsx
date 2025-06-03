@@ -11,6 +11,8 @@ import { es } from "date-fns/locale"
 import Header from "../components/Header"
 import Breadcrumbs from "../components/Breadcrumbs"
 import ProjectInteractions from "../components/ProjectInteractions"
+import { followUser, unfollowUser, isFollowing } from '../utils/followService'
+import { auth } from '../utils/firebase'
 
 const ProjectDetail = () => {
   const { id } = useParams()
@@ -21,6 +23,8 @@ const ProjectDetail = () => {
   const [author, setAuthor] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [isFollowingAuthor, setIsFollowingAuthor] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState(null)
 
   // Theme classes - now contrast-aware
   const theme = getContrastTheme(darkMode)
@@ -70,6 +74,22 @@ const ProjectDetail = () => {
   useEffect(() => {
     fetchProject()
   }, [id])
+
+  useEffect(() => {
+    if (auth.currentUser) {
+      setCurrentUserId(auth.currentUser.uid)
+    }
+  }, [])
+
+  useEffect(() => {
+    const checkFollow = async () => {
+      if (currentUserId && project && project.userId) {
+        const following = await isFollowing(currentUserId, project.userId)
+        setIsFollowingAuthor(following)
+      }
+    }
+    checkFollow()
+  }, [currentUserId, project])
 
   // Format date
   const formatDate = (timestamp) => {
@@ -314,6 +334,26 @@ const ProjectDetail = () => {
                     <p className={`text-sm ${theme.muted}`}>{author.email}</p>
                     {author.bio && <p className={`text-sm ${theme.highlight} mt-2`}>{author.bio}</p>}
                   </div>
+                </div>
+                <div className="mt-2">
+                  {currentUserId && (author.uid || project.userId) && currentUserId !== (author.uid || project.userId) && (
+                    <button
+                      onClick={async () => {
+                        const authorUid = author.uid || project.userId;
+                        if (!authorUid) return;
+                        if (isFollowingAuthor) {
+                          await unfollowUser(currentUserId, authorUid);
+                          setIsFollowingAuthor(false);
+                        } else {
+                          await followUser(currentUserId, authorUid);
+                          setIsFollowingAuthor(true);
+                        }
+                      }}
+                      className="ml-2 px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700"
+                    >
+                      {isFollowingAuthor ? 'Dejar de seguir' : 'Seguir'}
+                    </button>
+                  )}
                 </div>
               </div>
             )}

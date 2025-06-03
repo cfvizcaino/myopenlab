@@ -10,6 +10,7 @@ import { db, storage } from "../utils/firebase"
 import Header from "../components/Header"
 import EditProfileModal from "../components/EditProfileModal"
 import ProjectCard from "../components/ProjectCard"
+import { getFollowing, getFollowers } from '../utils/followService'
 
 const UserProfile = () => {
   const { user, userData, refreshUserData } = useAuth()
@@ -38,6 +39,9 @@ const UserProfile = () => {
     totalComments: 0,
   })
   const [loadingStats, setLoadingStats] = useState(true)
+  const [followingList, setFollowingList] = useState([]);
+  const [followersList, setFollowersList] = useState([]);
+  const [loadingFollows, setLoadingFollows] = useState(true);
 
   // Theme classes - now contrast-aware
   const theme = getContrastTheme(darkMode)
@@ -193,6 +197,35 @@ const UserProfile = () => {
 
     fetchFavoriteProjects()
   }, [profileData.favoriteProjects])
+
+  useEffect(() => {
+    const fetchFollows = async () => {
+      setLoadingFollows(true);
+      try {
+        if (!user) return;
+        // Obtener IDs de seguidos y seguidores
+        const followingIds = await getFollowing(user.uid);
+        const followersIds = await getFollowers(user.uid);
+        // Obtener datos de usuario para cada ID
+        const getUserData = async (uid) => {
+          const userDoc = await getDoc(doc(db, 'users', uid));
+          if (userDoc.exists()) {
+            return { uid, ...userDoc.data() };
+          }
+          return { uid, firstName: 'Desconocido', lastName: '', profilePicture: '' };
+        };
+        const followingData = await Promise.all(followingIds.map(getUserData));
+        const followersData = await Promise.all(followersIds.map(getUserData));
+        setFollowingList(followingData);
+        setFollowersList(followersData);
+      } catch (e) {
+        console.error('Error fetching follows:', e);
+      } finally {
+        setLoadingFollows(false);
+      }
+    };
+    fetchFollows();
+  }, [user]);
 
   // Handle profile picture upload
   const handleProfilePictureUpload = async (file) => {
@@ -598,6 +631,59 @@ const UserProfile = () => {
             <dd className={`mt-1 text-3xl font-semibold ${theme.highlight}`}>
               {loadingStats ? <div className="animate-pulse bg-gray-300 h-8 w-12 rounded"></div> : userStats.totalLikes}
             </dd>
+          </div>
+        </div>
+        
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className={`${theme.card} shadow rounded-lg p-6`}>
+            <h3 className={`text-lg font-medium ${theme.highlight} mb-4`}>Siguiendo</h3>
+            {loadingFollows ? (
+              <p className={theme.muted}>Cargando...</p>
+            ) : followingList.length === 0 ? (
+              <p className={theme.muted}>No sigues a nadie.</p>
+            ) : (
+              <ul>
+                {followingList.map((u) => (
+                  <li key={u.uid} className="flex items-center mb-3">
+                    <div className="h-8 w-8 rounded-full overflow-hidden bg-indigo-100 mr-3">
+                      {u.profilePicture ? (
+                        <img src={u.profilePicture} alt="Profile" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="flex items-center justify-center h-full w-full text-indigo-700 font-bold">
+                          {u.firstName?.charAt(0) || 'U'}
+                        </span>
+                      )}
+                    </div>
+                    <span className={theme.highlight}>{u.firstName} {u.lastName}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className={`${theme.card} shadow rounded-lg p-6`}>
+            <h3 className={`text-lg font-medium ${theme.highlight} mb-4`}>Seguidores</h3>
+            {loadingFollows ? (
+              <p className={theme.muted}>Cargando...</p>
+            ) : followersList.length === 0 ? (
+              <p className={theme.muted}>No tienes seguidores.</p>
+            ) : (
+              <ul>
+                {followersList.map((u) => (
+                  <li key={u.uid} className="flex items-center mb-3">
+                    <div className="h-8 w-8 rounded-full overflow-hidden bg-indigo-100 mr-3">
+                      {u.profilePicture ? (
+                        <img src={u.profilePicture} alt="Profile" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="flex items-center justify-center h-full w-full text-indigo-700 font-bold">
+                          {u.firstName?.charAt(0) || 'U'}
+                        </span>
+                      )}
+                    </div>
+                    <span className={theme.highlight}>{u.firstName} {u.lastName}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </div>

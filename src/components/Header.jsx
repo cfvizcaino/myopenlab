@@ -39,6 +39,7 @@ const Header = ({ theme: propTheme }) => {
       { name: "Dashboard", path: "/dashboard", active: isActive("/dashboard") },
       { name: "Proyectos", path: "/projects", active: isActive("/projects") },
       { name: "Catálogo", path: "/catalog", active: isActive("/catalog") },
+      { name: "Feed", path: "/feed", active: isActive("/feed") },
     ]
 
     return links.map((link) => (

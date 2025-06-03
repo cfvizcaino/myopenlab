@@ -13,6 +13,7 @@ import Projects from "./pages/Projects"
 import Catalog from "./pages/Catalog"
 import ProjectDetail from "./pages/ProjectDetail"
 import UserProfile from "./pages/UserProfile"
+import Feed from "./pages/Feed"
 
 // Keyboard shortcuts component
 function KeyboardShortcuts() {
@@ -93,6 +94,7 @@ function AppRoutes() {
       <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
       <Route path="/projects" element={user ? <Projects /> : <Navigate to="/login" />} />
       <Route path="/profile" element={user ? <UserProfile /> : <Navigate to="/login" />} />
+      <Route path="/feed" element={user? <Feed />: <Navigate to="/login" />} />
 
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" />} />
