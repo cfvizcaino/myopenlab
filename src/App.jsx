@@ -53,6 +53,7 @@ function KeyboardShortcuts() {
   return null
 }
 
+
 function App() {
   return (
     <AuthProvider>

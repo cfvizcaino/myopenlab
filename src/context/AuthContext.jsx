@@ -1,3 +1,4 @@
+
 "use client"
 
 import { createContext, useContext, useState, useEffect } from "react"
@@ -43,6 +44,18 @@ export const AuthProvider = ({ children }) => {
       await fetchUserData(user.uid)
     }
   }
+
+  const updateUserData = async (uid) => {
+    try {
+      const userDocRef = doc(db, "users", uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        setUserData(userDoc.data());
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {

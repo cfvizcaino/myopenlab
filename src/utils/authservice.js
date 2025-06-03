@@ -1,3 +1,4 @@
+
 import { auth } from "../utils/firebase"
 import {
   createUserWithEmailAndPassword,
@@ -47,6 +48,7 @@ export const registerUser = async (email, password, firstName, lastName) => {
     throw error
   }
 }
+
 
 /**
  * Inicia sesión con correo electrónico y contraseña.

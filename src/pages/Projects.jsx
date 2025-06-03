@@ -25,6 +25,7 @@ const Projects = () => {
   const [error, setError] = useState("")
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [currentProject, setCurrentProject] = useState(null)
+
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [projectToDelete, setProjectToDelete] = useState(null)
   const [filter, setFilter] = useState("all") // all, public, private
@@ -143,6 +144,7 @@ const Projects = () => {
     setCurrentProject(project)
     setIsFormOpen(true)
   }
+
 
   // Filter projects based on visibility
   const filteredProjects = projects.filter((project) => {

@@ -13,10 +13,9 @@ import ActivityTimeline from "../components/ActivityTimeline"
 import { useAccessibility } from "../context/AccessibilityContext"
 
 const Dashboard = () => {
-  const { user } = useAuth()
+  const { user, userData } = useAuth()
   const { darkMode, toggleDarkMode } = useTheme()
   const navigate = useNavigate()
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [recentProjects, setRecentProjects] = useState([])
   const [dashboardStats, setDashboardStats] = useState({
     totalProjects: 0,
@@ -298,7 +297,9 @@ const Dashboard = () => {
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           {/* Page header */}
           <div className="px-4 py-6 sm:px-0">
-            <h1 className={`text-3xl font-bold ${theme.highlight}`}>Hola, {firstName}</h1>
+            <h1 className={`text-3xl font-bold ${theme.highlight}`}>
+              Hola, {userData?.firstName || ''} {userData?.lastName || ''}
+            </h1>
             <p className={`mt-1 text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
               Bienvenido a tu dashboard personal. Aquí puedes ver el resumen de tu actividad y proyectos.
             </p>
@@ -398,7 +399,7 @@ const Dashboard = () => {
                   <p className={`mt-1 text-sm ${theme.muted}`}>Comienza creando tu primer proyecto.</p>
                   <Link
                     to="/projects"
-                    className={`mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${darkMode ? "focus:ring-offset-gray-800" : ""}`}
+                    className={`mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700`}
                   >
                     Crear Proyecto
                   </Link>
