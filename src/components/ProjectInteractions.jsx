@@ -19,6 +19,7 @@ import {
 import { db } from "../utils/firebase"
 import { formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
+import { Link } from "react-router-dom"
 
 const ProjectInteractions = ({ project, onProjectUpdate }) => {
   const { user, userData } = useAuth()
@@ -338,12 +339,12 @@ const ProjectInteractions = ({ project, onProjectUpdate }) => {
         </div>
 
         {!user && (
-          <p className={`text-sm ${theme.text.muted}`}>
-            <a href="/login" className="text-indigo-600 hover:text-indigo-700">
+          <div className="text-center text-sm mt-4">
+            <Link to="/login" className="text-indigo-500 hover:underline">
               Inicia sesión
-            </a>{" "}
-            para dar me gusta y comentar
-          </p>
+            </Link>
+            {" para dar me gusta y comentar"}
+          </div>
         )}
       </div>
 
